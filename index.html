@@ -102,13 +102,13 @@ body.lite #v-pos{display:block}
 </style>
 </head>
 <body>
-<script>if(window.claude)document.body.classList.add('lite')</script>
+ 
 <header><div class="bar">
  <div class="logo"><div class="mark">HC</div><div><b>Hostel Cig</b><small>Stock, sales &amp; profit tracker</small></div></div>
  <nav id="nav">
   <button data-v="dash" class="on">Dashboard</button><button data-v="inv">Stock Inventory</button><button data-v="pos">Point of Sale</button><button data-v="exp">Expenses</button><button data-v="log">Sales Log</button>
  </nav>
- <button class="btn am" id="addTop">Add Item</button><button class="btn gr" id="quick">Quick Sale</button>
+ <button class="btn am" id="addTop">Add Item</button><button class="btn gr" id="quick">Quick Sale</button><button class="btn" id="out" hidden>Sign out</button>
 </div></header>
  
 <main>
@@ -173,15 +173,27 @@ body.lite #v-pos{display:block}
 </main>
  
 <div id="dlg" class="ov" hidden></div>
+<div id="login" class="ov" hidden style="z-index:60"><form id="lf" novalidate>
+ <h3>Sign in to Hostel Cig</h3>
+ <label>Email<input id="l-em" type="email" autocomplete="username"></label>
+ <label>Password<input id="l-pw" type="password" autocomplete="current-password"></label>
+ <div id="lerr" class="rd" role="alert" style="margin-top:12px;min-height:20px"></div>
+ <button class="btn am" style="width:100%;padding:12px;margin-top:6px" type="submit">Sign in</button>
+</form></div>
 <div id="toast" role="status"></div>
  
 <script>
+/* ===== SETUP: paste your Firebase settings and your email here ===== */
+const FIREBASE_CONFIG={apiKey:"AIzaSyCZhzIQK13vUKkL1Ahv5cFlmMbUweRNsUs",authDomain:"hostel-cig.firebaseapp.com",projectId:"hostel-cig",appId:"1:374840528098:web:b27e48979975c4dd25a2bb"};
+const OWNER_EMAIL="hellopreator@gmail.com";
+/* ==================================================================== */
+const LOCAL=FIREBASE_CONFIG.apiKey.startsWith('PASTE');
 const K='hostelcig_v1';
 let D={items:[],sales:[],exp:[]},DBX=null;const P={items:{},sales:{},exp:{}},Q={};
-try{if(!window.claude)Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
+try{if(LOCAL)Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 const js=r=>JSON.stringify(r,Object.keys(r).sort());
 const RAW={items:[]},sold=id=>D.sales.reduce((n,x)=>x.item==id?n+(+x.sticks||0):n,0),eff=()=>{D.items=RAW.items.map(r=>({...r,stock:r.stock-sold(r.id)}))};
-function wr(c,id,f){const k=c+id;Q[k]=(Q[k]||Promise.resolve()).then(f).catch(e=>toast(e&&e.code=='invalid_argument'?'Save refused: '+(e.message||'no permission to edit'):'Could not save: '+((e&&(e.message||e.code))||'unknown error')))}
+function wr(c,id,f){const k=c+id;Q[k]=(Q[k]||Promise.resolve()).then(f).catch(e=>toast('Could not save: '+((e&&(e.message||e.code))||'unknown error')))}
 function save(){
  if(!DBX){try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}return}
  for(const c of ['items','sales','exp']){
@@ -190,22 +202,37 @@ function save(){
   for(const id in P[c])if(!seen[id]){delete P[c][id];wr(c,id,()=>DBX.doc(c+'/'+id).delete())}
  }
 }
-async function initDB(){
- try{
-  if(!window.claude)return;
-  const db=await claude.use('db');
-  if(!db){$('main').insertAdjacentHTML('afterbegin','<div class="card am" style="margin-bottom:16px">Shared data is not available here, so changes stay on this device only. Open the page from your claude.ai link while signed in.</div>');document.body.classList.remove('lite');return}
-  DBX=db;
-  let admin=false;try{const u=await claude.use('user');admin=u?await u.isOwner():false}catch(e){}
-  if(admin){document.body.classList.remove('lite');$('.logo small').textContent='Shared live with your partner'}else{$('.logo small').textContent='Point of sale'}
-  const ord={items:(a,b)=>(a.o||0)-(b.o||0)||String(a.name).localeCompare(b.name),sales:(a,b)=>a.t-b.t,exp:(a,b)=>a.d>b.d?1:a.d<b.d?-1:0};
-  ['items','sales','exp'].forEach(c=>db.collection(c).onSnapshot(sn=>{
-   const l=sn.docs.map(x=>({...x.data(),id:x.id})).sort(ord[c]);
-   P[c]={};l.forEach(r=>P[c][r.id]=js(r));
-   if(c=='items'){RAW.items=l;eff()}else{D[c]=l;if(c=='sales')eff()}
-   render();
-  },e=>toast('Live sync stopped. Reload the page.')));
- }catch(e){}
+function seed(){
+ try{if(localStorage.getItem('hc_seeded'))return;localStorage.setItem('hc_seeded','1')}catch(e){}
+ ['Marlboro','Mond','Esse','Platinum'].forEach((n,k)=>{const r={id:'brand_'+n.toLowerCase(),name:n,pack:20,buy:0,sell:0,stick:0,stock:0,min:2,o:k+1};DBX.doc('items/'+r.id).set(r).catch(()=>{})});
+}
+function subscribe(admin){
+ const ord={items:(a,b)=>(a.o||0)-(b.o||0)||String(a.name).localeCompare(b.name),sales:(a,b)=>a.t-b.t,exp:(a,b)=>a.d>b.d?1:a.d<b.d?-1:0};
+ (admin?['items','sales','exp']:['items','sales']).forEach(c=>DBX.collection(c).onSnapshot(sn=>{
+  const l=sn.docs.map(x=>({...x.data(),id:x.id})).sort(ord[c]);
+  P[c]={};l.forEach(r=>P[c][r.id]=js(r));
+  if(c=='items'){RAW.items=l;eff();if(admin&&!l.length)seed()}else{D[c]=l;if(c=='sales')eff()}
+  render();
+ },e=>toast('Live sync stopped: '+(e.code||e.message))));
+}
+async function bootFB(){
+ document.body.classList.add('lite');
+ let A,Au,Fs;
+ try{[A,Au,Fs]=window.__FBMODS||await Promise.all(['app','auth','firestore'].map(n=>import('https://www.gstatic.com/firebasejs/10.14.1/firebase-'+n+'.js')))}
+ catch(e){$('#lerr').textContent='Could not load Firebase. Check your internet.';$('#login').hidden=false;return}
+ const app=A.initializeApp(FIREBASE_CONFIG),auth=Au.getAuth(app),fdb=Fs.getFirestore(app);
+ $('#lf').onsubmit=e=>{e.preventDefault();$('#lerr').textContent='';Au.signInWithEmailAndPassword(auth,$('#l-em').value.trim(),$('#l-pw').value).catch(()=>{$('#lerr').textContent='Wrong email or password'})};
+ $('#out').onclick=()=>Au.signOut(auth).then(()=>location.reload());
+ Au.onAuthStateChanged(auth,u=>{
+  if(!u){$('#login').hidden=false;return}
+  if(DBX)return;
+  $('#login').hidden=true;$('#out').hidden=false;
+  const admin=(u.email||'').toLowerCase()==OWNER_EMAIL.toLowerCase();
+  document.body.classList.toggle('lite',!admin);
+  $('.logo small').textContent=admin?'Shared live with your partner':'Point of sale';
+  DBX={collection:c=>({onSnapshot:(f,er)=>Fs.onSnapshot(Fs.collection(fdb,c),f,er)}),doc:p=>{const [c,id]=p.split('/'),r=Fs.doc(fdb,c,id);return{set:v=>Fs.setDoc(r,v),delete:()=>Fs.deleteDoc(r)}}};
+  subscribe(admin);
+ });
 }
 const $=s=>document.querySelector(s);
 const money=n=>(n<0?'-':'')+'₹'+Math.abs(+n||0).toLocaleString('en-IN',{maximumFractionDigits:2});
@@ -379,10 +406,10 @@ $('#clrlog').onclick=()=>{if(!D.sales.length)return toast('The sales log is alre
 $('#bak').onclick=()=>dl('hostel-cig-backup-'+day(Date.now())+'.json',JSON.stringify(D),'application/json');
 $('#rest').onclick=()=>$('#file').click();
 $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.items||!o.sales||!o.exp)throw 0;D=o;save();render();toast('Backup restored')}catch(x){toast('That file is not a Hostel Cig backup')}})};
-async function dl(n,c,t){try{const d=window.claude&&await claude.use('downloads');if(d){await d.save({filename:n,data:new Blob([c],{type:t})});return}}catch(e){if(e&&e.code=='declined')return}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+function dl(n,c,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
 addEventListener('resize',()=>$('#v-dash').classList.contains('on')&&draw());
-if(!window.claude&&!D.seeded){['Marlboro','Mond','Esse','Platinum'].forEach(n=>{if(!D.items.some(i=>i.name.toLowerCase()==n.toLowerCase()))D.items.push({id:uid(),name:n,pack:20,buy:0,sell:0,stick:0,stock:0,min:2})});D.seeded=1;save()}
-render();initDB();
+if(LOCAL&&!D.seeded){['Marlboro','Mond','Esse','Platinum'].forEach(n=>{if(!D.items.some(i=>i.name.toLowerCase()==n.toLowerCase()))D.items.push({id:uid(),name:n,pack:20,buy:0,sell:0,stick:0,stock:0,min:2})});D.seeded=1;save()}
+render();if(!LOCAL)bootFB();
 </script>
 </body>
 </html>
