@@ -140,6 +140,7 @@ body.lite .view:not(#v-pos):not(#v-psl){display:none!important}
   <label class="chk"><input type="checkbox" id="i-l"> Low stock only</label>
  </div>
  <div class="invg" id="invT"></div>
+ <div class="card" style="margin-top:18px"><h2>Restock history</h2><div class="sub">Expected profit of each restock, at the prices set when you restocked</div><div class="tw" id="rsT"></div></div>
 </section>
 
 <section class="view" id="v-pos">
@@ -1471,14 +1472,14 @@ const OWNER_EMAIL="hellopreator@gmail.com";
 /* ==================================================================== */
 const LOCAL=FIREBASE_CONFIG.apiKey.startsWith('PASTE');
 const K='hostelcig_v1';
-let D={items:[],sales:[],exp:[]},DBX=null;const P={items:{},sales:{},exp:{}},Q={};
+let D={items:[],sales:[],exp:[],restocks:[]},DBX=null;const P={items:{},sales:{},exp:{},restocks:{}},Q={};
 try{if(LOCAL)Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 const js=r=>JSON.stringify(r,Object.keys(r).sort());
 const RAW={items:[]},sold=id=>D.sales.reduce((n,x)=>x.item==id?n+(+x.sticks||0):n,0),eff=()=>{D.items=RAW.items.map(r=>({...r,stock:r.stock-sold(r.id)}))};
 function wr(c,id,f){const k=c+id;Q[k]=(Q[k]||Promise.resolve()).then(f).catch(e=>toast('Could not save: '+((e&&(e.message||e.code))||'unknown error')))}
 function save(){
  if(!DBX){try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}return}
- for(const c of ['items','sales','exp']){
+ for(const c of ['items','sales','exp','restocks']){
   const seen={};
   for(const r of D[c]){seen[r.id]=1;const d=c=='items'?{...r,stock:r.stock+sold(r.id)}:r,j=js(d);if(P[c][r.id]!==j){P[c][r.id]=j;wr(c,r.id,()=>DBX.doc(c+'/'+r.id).set(d))}}
   for(const id in P[c])if(!seen[id]){delete P[c][id];wr(c,id,()=>DBX.doc(c+'/'+id).delete())}
@@ -1489,8 +1490,8 @@ function seed(){
  ['Marlboro','Mond','Esse','Platinum'].forEach((n,k)=>{const r={id:'brand_'+n.toLowerCase(),name:n,pack:20,buy:0,sell:0,stick:0,stock:0,min:2,o:k+1};DBX.doc('items/'+r.id).set(r).catch(()=>{})});
 }
 function subscribe(admin){
- const ord={items:(a,b)=>(a.o||0)-(b.o||0)||String(a.name).localeCompare(b.name),sales:(a,b)=>a.t-b.t,exp:(a,b)=>a.d>b.d?1:a.d<b.d?-1:0};
- (admin?['items','sales','exp']:['items','sales']).forEach(c=>DBX.collection(c).onSnapshot(sn=>{
+ const ord={items:(a,b)=>(a.o||0)-(b.o||0)||String(a.name).localeCompare(b.name),sales:(a,b)=>a.t-b.t,exp:(a,b)=>a.d>b.d?1:a.d<b.d?-1:0,restocks:(a,b)=>a.t-b.t};
+ (admin?['items','sales','exp','restocks']:['items','sales']).forEach(c=>DBX.collection(c).onSnapshot(sn=>{
   const l=sn.docs.map(x=>({...x.data(),id:x.id})).sort(ord[c]);
   P[c]={};l.forEach(r=>P[c][r.id]=js(r));
   if(c=='items'){RAW.items=l;eff();if(admin&&!l.length)seed()}else{D[c]=l;if(c=='sales')eff()}
@@ -1566,7 +1567,7 @@ function settle(id){
 }
 function psl(){
  const l=[...D.sales].sort((a,b)=>b.t-a.t).slice(0,60);
- $('#pslT').innerHTML=l.length?`<table><thead><tr><th>Date</th><th>Time</th><th>Brand</th><th class="n">Sticks</th><th class="n">Rate / stick</th></tr></thead><tbody>${l.map(s=>{const t=new Date(s.t);return`<tr><td>${t.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td><td>${t.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(s.name)}</td><td class="n">${s.sticks}</td><td class="n">${money(s.sticks?s.rev/s.sticks:0)}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No sales yet.</div>';
+ $('#pslT').innerHTML=l.length?`<table><thead><tr><th>Date</th><th>Time</th><th>Brand</th><th>Customer</th><th class="n">Sticks</th><th class="n">Rate / stick</th></tr></thead><tbody>${l.map(s=>{const t=new Date(s.t);return`<tr><td>${t.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td><td>${t.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(s.name)}</td><td>${s.cust?esc(s.cust):'<span class="mut">Walk-in</span>'}</td><td class="n">${s.sticks}</td><td class="n">${money(s.sticks?s.rev/s.sticks:0)}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No sales yet.</div>';
 }
 function ask(msg,yes,label){
  const d=$('#dlg');
@@ -1621,9 +1622,16 @@ function itemForm(i){
   const pack=+o.pack,it={id:i?.id||uid(),name:o.name.trim(),pack,buy:+o.buy,sell:+o.sell,stick:o.stick===''?Math.ceil(+o.sell/pack):+o.stick,stock:Math.round((+o.packs||0)*pack),min:o.min===''?2:+o.min,o:i?.o||Date.now()};
   i?Object.assign(i,it):D.items.push(it);save();render();toast('Item saved')});
 }
+function rs(){
+ const l=[...D.restocks].sort((a,b)=>b.t-a.t).slice(0,40);
+ $('#rsT').innerHTML=l.length?`<table><thead><tr><th>Date</th><th>Brand</th><th class="n">Packs</th><th class="n">Cost</th><th class="n">Profit (pack price)</th><th class="n">Profit (stick price)</th></tr></thead><tbody>${l.map(r=>{const cost=r.packs*r.buy,pp=r.packs*(r.sell-r.buy),sp=r.stick?r.packs*r.pack*r.stick-cost:null;return`<tr><td>${new Date(r.t).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td><td>${esc(r.name)}</td><td class="n">${r.packs}</td><td class="n">${money(cost)}</td><td class="n ${pp<0?'rd':'gr'}">${money(pp)}</td><td class="n ${sp==null?'mut':sp<0?'rd':'gr'}">${sp==null?'-':money(sp)}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No restocks recorded yet. Press Restock on a brand.</div>';
+}
 function restock(i){
  form('Restock '+esc(i.name),[['q','Packs bought','number','','required min="0.01"'],['buy','Wholesale cost per pack (₹)','number',i.buy,'required min="0"']],o=>{
-  const old=i.stock*cps(i),add=+o.q*i.pack;i.buy=+o.buy;i.stock+=Math.round(add);save();render();toast('Stock added')});
+  const q=+o.q,buy=+o.buy;i.buy=buy;i.stock+=Math.round(q*i.pack);
+  D.restocks.push({id:uid(),t:Date.now(),item:i.id,name:i.name,packs:q,pack:i.pack,buy,sell:i.sell,stick:i.stick});
+  save();render();toast('Restocked. Expected profit '+money(q*(i.sell-buy))+' at pack price');
+ });
 }
 
 let cart=[];
@@ -1678,7 +1686,7 @@ function log(){
 
 /* ---------- wiring ---------- */
 function show(v){document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id=='v-'+v));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));if(v=='dash')draw();scrollTo(0,0)}
-function render(){dash();inv();posFill();expn();log();psl()}
+function render(){dash();inv();rs();posFill();expn();log();psl()}
 $('#nav').onclick=e=>{if(e.target.dataset.v)show(e.target.dataset.v)};
 document.body.addEventListener('click',e=>{
  const b=e.target.closest('[data-a],[data-go]');if(!b)return;
@@ -1705,7 +1713,7 @@ $('#csv').onclick=()=>{const r=[['Date','Brand','Customer','Phone','Paid by','Qt
 $('#clrlog').onclick=()=>{if(!D.sales.length)return toast('The sales log is already empty');ask('Delete all '+D.sales.length+' sales from the log?\nStock levels and expenses stay as they are. This cannot be undone, so press Backup data first if you want a copy.',()=>{D.sales=[];save();render();toast('Sales log cleared')},'Clear all logs')};
 $('#bak').onclick=()=>dl('hostel-cig-backup-'+day(Date.now())+'.json',JSON.stringify(D),'application/json');
 $('#rest').onclick=()=>$('#file').click();
-$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.items||!o.sales||!o.exp)throw 0;D=o;save();render();toast('Backup restored')}catch(x){toast('That file is not a Hostel Cig backup')}})};
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.items||!o.sales||!o.exp)throw 0;D=o;D.restocks=D.restocks||[];save();render();toast('Backup restored')}catch(x){toast('That file is not a Hostel Cig backup')}})};
 function dl(n,c,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
 addEventListener('resize',()=>$('#v-dash').classList.contains('on')&&draw());
 if(LOCAL&&!D.seeded){['Marlboro','Mond','Esse','Platinum'].forEach(n=>{if(!D.items.some(i=>i.name.toLowerCase()==n.toLowerCase()))D.items.push({id:uid(),name:n,pack:20,buy:0,sell:0,stick:0,stock:0,min:2})});D.seeded=1;save()}
