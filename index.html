@@ -98,9 +98,14 @@ body.lite .view:not(#v-pos):not(#v-psl){display:none!important}
 .isk{color:var(--mut)}.isk b{font:700 34px Consolas,"Courier New",monospace;color:var(--tx)}
 .im{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;padding-top:12px;border-top:1px solid var(--line)}
 .im div{display:flex;flex-direction:column;font-size:13px;color:var(--mut)}.im b{font-size:16px;color:var(--tx)}.im b.gr{color:var(--gr)}
-.ia{display:flex;gap:8px;margin-top:10px}.ia .btn{flex:1;padding:12px 6px}
+.ia{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.ia .btn{flex:1;padding:12px 6px}
 .chk{display:flex;align-items:center;gap:8px;margin:0;color:var(--tx);font-size:15px;white-space:nowrap}
 .chk input{width:20px;height:20px}
+tr[data-a]{cursor:pointer}tr[data-a]:hover td{background:#12162200;background:#121622}
+.sg{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}
+.sg label{display:flex;gap:8px;align-items:center;margin:6px 0;color:var(--tx);font-size:14px}.sg label input{width:18px;height:18px;margin:0}
+.sg input[type=text]{margin-top:8px}.sgb{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.warn{border-left:4px solid var(--am);padding:10px 14px;background:#1a1810;border-radius:8px;margin-bottom:8px}
 @media(max-width:520px){.invg{grid-template-columns:1fr}}
 @media(max-width:980px){.pos{grid-template-columns:1fr}.cart{position:static}}
 @media(max-width:980px){.k4{grid-template-columns:1fr 1fr}.c2,.c3{grid-template-columns:1fr}}
@@ -114,13 +119,14 @@ body.lite .view:not(#v-pos):not(#v-psl){display:none!important}
 <header><div class="bar">
  <div class="logo"><div class="mark">HC</div><div><b>Hostel Cig</b><small>Stock, sales &amp; profit tracker</small></div></div>
  <nav id="nav">
-  <button data-v="dash" class="on">Dashboard</button><button data-v="inv">Stock Inventory</button><button data-v="pos">Point of Sale</button><button data-v="psl">Recent sales</button><button data-v="exp">Expenses</button><button data-v="log">Sales Log</button><button data-v="cr">Credit</button><button data-v="day">Day report</button>
+  <button data-v="dash" class="on">Dashboard</button><button data-v="inv">Stock Inventory</button><button data-v="pos">Point of Sale</button><button data-v="psl">Recent sales</button><button data-v="exp">Expenses</button><button data-v="log">Sales Log</button><button data-v="cr">Credit</button><button data-v="day">Day report</button><button data-v="cu">Customers</button><button data-v="pur">Purchases</button><button data-v="fin">Finance</button><button data-v="aud">Audit</button>
  </nav>
  <button class="btn am" id="addTop">Add Item</button><button class="btn gr" id="quick">Quick Sale</button><button class="btn" id="out" hidden>Sign out</button>
 </div></header>
 
 <main>
 <section class="view on" id="v-dash">
+ <div id="alerts"></div>
  <div class="grid k4" id="kpis"></div>
  <div class="grid c2">
   <div class="card"><div class="row"><div><h2>Sales &amp; profit trends</h2><div class="sub">Last 14 days</div></div><div><span class="am">● Revenue</span> &nbsp; <span class="gr">● Net profit</span></div></div><canvas id="chart"></canvas></div>
@@ -142,6 +148,8 @@ body.lite .view:not(#v-pos):not(#v-psl){display:none!important}
   <label class="chk"><input type="checkbox" id="i-l"> Low stock only</label>
  </div>
  <div class="invg" id="invT"></div>
+ <div class="card" style="margin-top:18px"><h2>Stock movement</h2><div class="sub">Opening stock + purchases − sales + adjustments = available. A check mark means the numbers agree.</div><div class="tw" id="mvT"></div></div>
+ <div class="card" style="margin-top:18px"><h2>Stock adjustment history</h2><div class="tw" id="adjT"></div></div>
  <div class="card" style="margin-top:18px"><h2>Restock history</h2><div class="sub">Real profit of each restock, matching sold sticks to oldest stock first. Full batch profit assumes every stick sells at your stick price.</div><div class="tw" id="rsT"></div></div>
 </section>
 
@@ -181,6 +189,33 @@ body.lite .view:not(#v-pos):not(#v-psl){display:none!important}
  <div class="head"><h1>Day report</h1><input type="date" id="d-date" aria-label="Date"></div>
  <div class="grid k4" id="dayK"></div>
  <div class="grid c3"><div class="card"><h2>By brand</h2><div class="tw" id="dayB"></div></div><div class="card"><h2>By seller</h2><div class="list" id="dayS"></div></div></div>
+</section>
+
+<section class="view" id="v-cu">
+ <div class="head"><h1>Customers</h1><input type="search" id="cu-q" placeholder="Search name or phone" aria-label="Search customers" style="width:240px"></div>
+ <div id="cuS"></div>
+ <div class="card" style="margin-top:18px"><div class="tw" id="cuT"></div></div>
+ <div id="cuD"></div>
+</section>
+
+<section class="view" id="v-pur">
+ <div class="head"><h1>Purchases &amp; suppliers</h1><button class="btn am" id="newPur">New purchase</button></div>
+ <div class="grid k3" id="purS"></div>
+ <div class="card" style="margin-top:18px"><h2>Supplier ledger</h2><div class="tw" id="supT"></div></div>
+ <div class="card" style="margin-top:18px"><h2>Purchase history</h2><div class="tw" id="purT"></div></div>
+</section>
+
+<section class="view" id="v-fin">
+ <div class="head"><h1>Finance</h1><div class="tools" style="margin:0"><input type="date" id="fn-from" aria-label="From"><input type="date" id="fn-to" aria-label="To"><button class="btn" id="openCash">Set opening cash</button></div></div>
+ <div class="grid k4" id="finK"></div>
+ <div class="grid c3"><div class="card"><h2>Profit &amp; loss</h2><div class="list" id="pnl"></div></div><div class="card"><h2>Money in and out</h2><div class="list" id="mvS"></div></div></div>
+ <div class="card" style="margin-top:18px"><h2>Daily cash reconciliation</h2><div class="sub">Count the cash you hold at day end and type it in. Difference = counted minus expected.</div><div class="tw" id="recT"></div></div>
+</section>
+
+<section class="view" id="v-aud">
+ <div class="head"><h1>Audit &amp; data checks</h1><button class="btn" id="bak2">Backup data</button></div>
+ <div class="card"><h2>Data quality</h2><div class="sub">Records that are incomplete or look wrong. Nothing here is changed without your approval.</div><div id="dqL"></div></div>
+ <div class="card" style="margin-top:18px"><h2>Audit log</h2><div class="sub">Stock and money changes, newest first.</div><div class="tw" id="audT"></div></div>
 </section>
 
 <section class="view" id="v-exp">
@@ -1558,7 +1593,8 @@ const OWNER_EMAIL="hellopreator@gmail.com";
 /* ==================================================================== */
 const LOCAL=FIREBASE_CONFIG.apiKey.startsWith('PASTE');
 const K='hostelcig_v1';
-let D={items:[],sales:[],exp:[],restocks:[]},DBX=null;const P={items:{},sales:{},exp:{},restocks:{}},Q={};
+const COLS=['items','sales','exp','restocks','adj','audit','customers','settings','recon'];
+let D={items:[],sales:[],exp:[],restocks:[],adj:[],audit:[],customers:[],settings:[],recon:[]},DBX=null;const P={},Q={};COLS.forEach(c=>P[c]={});
 try{if(LOCAL)Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 const js=r=>JSON.stringify(r,Object.keys(r).sort());
 const RAW={items:[]},CH={},CS=new Set();let ADMIN=true,costsReady=false,BY='Owner',LEGS=false;
@@ -1572,7 +1608,7 @@ const toDoc=(c,r)=>{if(c=='items'){const{buy,...x}=r;return{...x,stock:r.stock+s
 function wr(c,id,f){const k=c+id;Q[k]=(Q[k]||Promise.resolve()).then(f).catch(e=>toast('Could not save: '+((e&&(e.message||e.code))||'unknown error')))}
 function save(){
  if(!DBX){try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}return}
- for(const c of (ADMIN?['items','sales','exp','restocks']:['sales'])){
+ for(const c of (ADMIN?COLS:['sales','audit'])){
   const seen={};
   for(const r of D[c]){
    seen[r.id]=1;
@@ -1594,8 +1630,8 @@ function seed(){
 }
 function subscribe(admin){
  ADMIN=admin;BY=admin?'Owner':'Partner';
- const ord={items:(a,b)=>(a.o||0)-(b.o||0)||String(a.name).localeCompare(b.name),sales:(a,b)=>a.t-b.t,exp:(a,b)=>a.d>b.d?1:a.d<b.d?-1:0,restocks:(a,b)=>a.t-b.t};
- (admin?['items','sales','exp','restocks']:['items','sales']).forEach(c=>DBX.collection(c).onSnapshot(sn=>{
+ const ord={items:(a,b)=>(a.o||0)-(b.o||0)||String(a.name).localeCompare(b.name),sales:(a,b)=>a.t-b.t,exp:(a,b)=>a.d>b.d?1:a.d<b.d?-1:0,restocks:(a,b)=>a.t-b.t,adj:(a,b)=>a.t-b.t,audit:(a,b)=>a.t-b.t,customers:(a,b)=>String(a.name||'').localeCompare(b.name||''),settings:(a,b)=>0,recon:(a,b)=>a.id>b.id?1:-1};
+ (admin?COLS:['items','sales']).forEach(c=>DBX.collection(c).onSnapshot(sn=>{
   const l=sn.docs.map(x=>({...x.data(),id:x.id})).sort(ord[c]);
   P[c]={};l.forEach(r=>P[c][r.id]=js(r));
   if(c=='items'){RAW.items=l;eff();if(admin&&!l.length)seed()}else{D[c]=l;if(c=='sales'){LEGS=l.some(r=>r.cost!=null);eff()}}
@@ -1644,7 +1680,7 @@ function totals(){
 }
 function form(title,fields,ok){
  const d=$('#dlg');
- d.innerHTML=`<form novalidate><h3>${title}</h3>${fields.map(f=>`<label>${f[1]}<input name="${f[0]}" type="${f[2]||'number'}" step="any" inputmode="${(f[2]||'number')=='number'?'decimal':'text'}" value="${esc(f[3]??'')}" ${f[4]||''}></label>`).join('')}<div id="ferr" class="rd" role="alert" style="margin-top:12px;min-height:20px"></div><div class="row" style="margin-top:8px;justify-content:flex-end"><button type="button" class="btn" id="dx">Cancel</button><button type="button" class="btn am" id="sv">Save</button></div></form>`;
+ d.innerHTML=`<form novalidate><h3>${title}</h3>${fields.map(f=>f[2]=='select'?`<label>${f[1]}<select name="${f[0]}">${f[5].map(o=>`<option value="${esc(o[0])}" ${o[0]==f[3]?'selected':''}>${esc(o[1])}</option>`).join('')}</select></label>`:`<label>${f[1]}<input name="${f[0]}" type="${f[2]||'number'}" step="any" inputmode="${(f[2]||'number')=='number'?'decimal':'text'}" value="${esc(f[3]??'')}" ${f[4]||''}></label>`).join('')}<div id="ferr" class="rd" role="alert" style="margin-top:12px;min-height:20px"></div><div class="row" style="margin-top:8px;justify-content:flex-end"><button type="button" class="btn" id="dx">Cancel</button><button type="button" class="btn am" id="sv">Save</button></div></form>`;
  d.hidden=false;
  const fm=d.querySelector('form'),er=$('#ferr');
  const go=()=>{
@@ -1652,7 +1688,7 @@ function form(title,fields,ok){
   for(const f of fields){
    const v=String(o[f[0]]??'').trim(),a=f[4]||'';
    if(a.includes('required')&&v==='')return er.textContent='Please fill in: '+f[1];
-   if((f[2]||'number')=='number'&&v!==''){const n=+v,m=+((a.match(/min="([\d.]+)"/)||[0,0])[1]);if(isNaN(n)||n<m)return er.textContent=f[1]+(m>0?' must be at least '+m:' must be 0 or more')}
+   if((f[2]||'number')=='number'&&v!==''){const n=+v,mm=a.match(/min="(-?[\d.]+)"/),m=mm?+mm[1]:-Infinity;if(isNaN(n)||n<m)return er.textContent=f[1]+(m>0?' must be at least '+m:' must be 0 or more')}
   }
   try{ok(o);d.hidden=true}catch(x){er.textContent='Could not save: '+x.message}
  };
@@ -1679,9 +1715,9 @@ function receive(list){
  const go=m=>{
   let a=Math.round((+$('#ra').value)*100)/100;
   if(!(a>0)||a>owe+0.001)return $('#ferr').textContent='Enter an amount from 1 to '+owe;
-  const t=Date.now();
+  const t=Date.now(),a0=a;
   for(const s of list){if(a<=0)break;const x=Math.min(a,bal(s));s.pay=[...payments(s),{t,a:x,m}];delete s.sp;a=Math.round((a-x)*100)/100}
-  d.hidden=true;save();render();toast('Payment saved');
+  aud('Credit payment received',who+' '+money(a0)+' by '+m);d.hidden=true;save();render();toast('Payment saved');
  };
  $('#s1').onclick=()=>go('cash');$('#s2').onclick=()=>go('gpay');
 }
@@ -1689,7 +1725,7 @@ function settle(id){const s=D.sales.find(x=>x.id==id);if(s)receive([s])}
 let CG=[];
 function credit(){
  const m={};
- D.sales.filter(s=>s.pm=='credit'&&bal(s)>0).forEach(s=>{const k=(s.cust||'?').trim().toLowerCase();const g=m[k]=m[k]||{name:s.cust||'?',ph:'',l:[]};if(s.ph)g.ph=s.ph;g.l.push(s)});
+ D.sales.filter(s=>s.pm=='credit'&&bal(s)>0).forEach(s=>{const c=custOf(s)||{key:'?',name:'?',ph:''};const g=m[c.key]=m[c.key]||{name:c.name,ph:c.ph,l:[]};if(s.ph&&!g.ph)g.ph=s.ph;g.l.push(s)});
  CG=Object.values(m).map(g=>({...g,owe:g.l.reduce((n,s)=>n+bal(s),0)})).sort((a,b)=>b.owe-a.owe);
  const tot=CG.reduce((n,g)=>n+g.owe,0);
  $('#crS').innerHTML=`<div class="card"><div class="lbl">Total credit pending</div><div class="big am">${money(tot)}</div><span class="mut">${CG.length} customers</span></div>`;
@@ -1719,6 +1755,135 @@ function reorder(){
 function psl(){
  const l=[...D.sales].sort((a,b)=>b.t-a.t).slice(0,60),shown={};
  $('#pslT').innerHTML=l.length?`<table><thead><tr><th>Date</th><th>Time</th><th>Brand</th><th>Customer</th><th class="n">Sticks</th><th class="n">Rate / stick</th><th></th></tr></thead><tbody>${l.map(s=>{const t=new Date(s.t),ok=!ADMIN&&s.by=='Partner'&&Date.now()-s.t<300000&&s.bill&&!shown[s.bill];if(ok)shown[s.bill]=1;return`<tr><td>${t.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td><td>${t.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(s.name)}</td><td>${s.cust?esc(s.cust):'<span class="mut">Walk-in</span>'}</td><td class="n">${s.sticks}</td><td class="n">${money(s.sticks?s.rev/s.sticks:0)}</td><td class="n">${ok?`<button class="btn sm rd" data-a="pu" data-id="${s.bill}">Undo bill</button>`:''}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No sales yet.</div>';
+}
+/* ===== ERP modules: customers, suppliers, finance, audit ===== */
+const nk=x=>String(x||'').trim().toLowerCase().replace(/\s+/g,' ');
+const CATS=['Transportation','Packaging','Operating expenses','Partner commission','Miscellaneous'];
+const aud=(act,det)=>{D.audit.push({id:uid(),t:Date.now(),by:BY,act,det:String(det||'')})};
+const fmtD=t=>new Date(t).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+const fmtDT=t=>new Date(t).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+const cfg=()=>D.settings.find(x=>x.id=='cfg')||{};
+const capw=x=>String(x).replace(/\b\w/g,c=>c.toUpperCase());
+let CIDX={},CV=null,CA=[],SGL=[],SG=[];
+function cidx(){CIDX={};D.customers.filter(c=>c.kind=='cust').forEach(c=>(c.names||[]).forEach(n=>{CIDX[n]=c}))}
+function custOf(s){const k=nk(s.cust);if(!k)return null;const c=CIDX[k];return c?{key:'c:'+c.id,name:c.name,ph:c.ph||''}:{key:'n:'+k,name:String(s.cust).trim(),ph:''}}
+const NOISE=new Set(['credit','cash','gpay','balance','give','total','pending','paid']);
+function cleanName(raw){return String(raw).toLowerCase().split(/\.{2,}|…/)[0].replace(/[0-9.,_\-\/]+/g,' ').split(/\s+/).filter(x=>x&&!NOISE.has(x)).join(' ')}
+function lev(a,b){let p=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c.push(Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]!=b[j-1]?1:0)));p=c}return p[b.length]}
+function similar(a,b){const x=a.replace(/ /g,''),y=b.replace(/ /g,'');if(x==y)return true;const[sh,lo]=x.length<=y.length?[x,y]:[y,x];if(sh.length>=5&&lo.startsWith(sh))return true;const d=lev(x,y);return d<=1||(d<=2&&sh.length>=7)}
+function suggestions(){
+ const cnt={};D.sales.forEach(s=>{const k=nk(s.cust);if(k&&!CIDX[k]){const c=cnt[k]=cnt[k]||{n:0,o:String(s.cust).trim()};c.n++}});
+ const dis=new Set();D.customers.filter(c=>c.kind=='dismiss').forEach(c=>(c.names||[]).forEach(n=>dis.add(n)));
+ const by={};Object.entries(cnt).forEach(([k,v])=>{const ck=cleanName(k);if(ck)(by[ck]=by[ck]||[]).push({raw:k,n:v.n,o:v.o})});
+ const keys=Object.keys(by),par={};keys.forEach(k=>{par[k]=k});const f=x=>{while(par[x]!=x){par[x]=par[par[x]];x=par[x]}return x};
+ for(let i=0;i<keys.length;i++)for(let j=i+1;j<keys.length;j++)if(similar(keys[i],keys[j]))par[f(keys[i])]=f(keys[j]);
+ const cl={};keys.forEach(k=>{(cl[f(k)]=cl[f(k)]||[]).push(...by[k])});
+ return Object.values(cl).map(v=>v.sort((a,b)=>b.n-a.n)).filter(v=>(v.length>1||v[0].raw!=cleanName(v[0].raw))&&!v.every(x=>dis.has(x.raw))).sort((a,b)=>b.reduce((n,x)=>n+x.n,0)-a.reduce((n,x)=>n+x.n,0));
+}
+function custAgg(){
+ const m={};
+ D.sales.forEach(s=>{const c=custOf(s);if(!c)return;const g=m[c.key]=m[c.key]||{key:c.key,name:c.name,ph:c.ph,n:0,buy:0,credit:0,paid:0,out:0,last:0,sales:[],pays:[]};
+  if(!g.ph&&s.ph)g.ph=s.ph;g.n++;g.buy+=s.rev;g.last=Math.max(g.last,s.t);g.sales.push(s);
+  if(s.pm=='credit'){g.credit+=s.rev;const pd=payments(s);g.paid+=pd.reduce((x,p)=>x+p.a,0);g.out+=bal(s);pd.forEach(p=>g.pays.push({...p,sale:s}))}});
+ return Object.values(m);
+}
+function mergeCluster(n,yes){
+ const v=SGL[n],card=document.querySelector('.sg[data-n="'+n+'"]');if(!v||!card)return;
+ if(yes){
+  const names=[...card.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value),name=card.querySelector('input[type=text]').value.trim();
+  if(!names.length||!name)return toast('Tick at least one spelling and type a name');
+  D.customers.push({id:uid(),kind:'cust',name,ph:'',names});aud('Customers merged',name+' from '+names.join(', '));toast('Merged');
+ }else{D.customers.push({id:uid(),kind:'dismiss',names:v.map(x=>x.raw)});aud('Merge dismissed',v.map(x=>x.raw).join(', '))}
+ save();render();
+}
+function ensureCust(g){let c=g.key.startsWith('c:')?D.customers.find(x=>'c:'+x.id==g.key):null;if(!c){c={id:uid(),kind:'cust',name:g.name,ph:g.ph||'',names:[g.key.slice(2)]};D.customers.push(c)}return c}
+function aliasForm(){
+ const g=CA.find(x=>x.key==CV);if(!g)return;
+ const un=[...new Set(D.sales.map(x=>nk(x.cust)).filter(k=>k&&!CIDX[k]&&('n:'+k)!=g.key))].sort();
+ if(!un.length)return toast('No other unlinked names');
+ form('Add a spelling to '+esc(g.name),[['n','Name to merge in','select',un[0],'',un.map(x=>[x,x])]],o=>{const c=ensureCust(g);c.names=[...new Set([...(c.names||[]),o.n])];aud('Customer spelling added',c.name+' ← '+o.n);save();CV='c:'+c.id;render()});
+}
+function phoneForm(){
+ const g=CA.find(x=>x.key==CV);if(!g)return;
+ form('Phone for '+esc(g.name),[['ph','Phone number','text',g.ph||'']],o=>{const c=ensureCust(g);c.ph=o.ph.trim();aud('Customer phone edited',c.name);save();CV='c:'+c.id;render()});
+}
+function customers(){
+ const q=nk($('#cu-q').value);
+ $('#cuS').innerHTML=SGL.length?`<div class="card"><h2>Possible duplicate names</h2><div class="sub">${SGL.length} groups of similar spellings. Tick the spellings that are the same person, check the name, then approve. Old sales are not changed.</div>${SGL.map((v,n)=>`<div class="sg" data-n="${n}">${v.map(x=>`<label><input type="checkbox" value="${esc(x.raw)}" checked> ${esc(x.o)} <span class="mut">(${x.n} sales${nk(x.o)!=cleanName(x.o)?', has a note in the name':''})</span></label>`).join('')}<input type="text" value="${esc(capw(cleanName(v[0].raw)))}" aria-label="Customer name"><div class="sgb"><button class="btn gr sm" data-a="cm" data-n="${n}">Same person, merge</button><button class="btn sm" data-a="cd" data-n="${n}">Not the same</button></div></div>`).join('')}</div>`:'';
+ CA=custAgg().sort((a,b)=>b.buy-a.buy);
+ const l=CA.filter(g=>!q||nk(g.name).includes(q)||(g.ph||'').includes(q)),walk=D.sales.filter(x=>!nk(x.cust));
+ $('#cuT').innerHTML=(l.length?`<table><thead><tr><th>Customer</th><th>Phone</th><th class="n">Purchases</th><th class="n">Visits</th><th class="n">Credit given</th><th class="n">Paid</th><th class="n">Outstanding</th><th>Last purchase</th></tr></thead><tbody>${l.map(g=>`<tr data-a="cv" data-n="${CA.indexOf(g)}"><td><b>${esc(g.name)}</b></td><td>${esc(g.ph||'')}</td><td class="n">${money(g.buy)}</td><td class="n">${g.n}</td><td class="n">${money(g.credit)}</td><td class="n">${money(g.paid)}</td><td class="n ${g.out>0?'am':''}">${money(g.out)}</td><td>${fmtD(g.last)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No named customers match.</div>')+`<div class="mut" style="margin-top:10px">Walk-in sales with no name: ${walk.length} sales, ${money(sum(walk,'rev'))}</div>`;
+ const g=CA.find(x=>x.key==CV);
+ $('#cuD').innerHTML=g?`<div class="card" style="margin-top:18px"><div class="row"><h2>${esc(g.name)}</h2><button class="btn sm" data-a="cv" data-n="-1">Close</button></div><div class="sub">${esc(g.ph||'No phone recorded')} · ${g.n} purchases · ${money(g.buy)} total · credit given ${money(g.credit)} · paid ${money(g.paid)} · <b class="${g.out>0?'am':''}">outstanding ${money(g.out)}</b></div>
+ <div class="tools">${g.out>0?'<button class="btn gr sm" data-a="rc2">Receive payment</button>':''}<button class="btn sm" data-a="ca">Add another spelling</button><button class="btn sm" data-a="cp">Edit phone</button></div>
+ <h3 style="margin:10px 0 6px;font-size:16px">Credit settlement</h3><div class="tw">${g.sales.filter(x=>x.pm=='credit').length?`<table style="min-width:0"><thead><tr><th>Date</th><th>Brand</th><th class="n">Amount</th><th class="n">Paid</th><th class="n">Balance</th><th>Status</th></tr></thead><tbody>${g.sales.filter(x=>x.pm=='credit').sort((a,b)=>b.t-a.t).map(x=>`<tr><td>${fmtD(x.t)}</td><td>${esc(x.name)} × ${x.sticks}</td><td class="n">${money(x.rev)}</td><td class="n">${money(paidOf(x))}</td><td class="n">${money(bal(x))}</td><td>${bal(x)<=0?'<span class="pill g">Settled</span>':paidOf(x)>0?'<span class="pill a">Part paid</span>':'<span class="pill r">Pending</span>'}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No credit sales.</div>'}</div>
+ <h3 style="margin:14px 0 6px;font-size:16px">Payment history</h3><div class="tw">${g.pays.length?`<table style="min-width:0"><thead><tr><th>Date</th><th class="n">Amount</th><th>Method</th><th>For</th></tr></thead><tbody>${g.pays.sort((a,b)=>b.t-a.t).map(p=>`<tr><td>${fmtDT(p.t)}</td><td class="n gr">${money(p.a)}</td><td>${p.m=='gpay'?'GPay':'Cash'}</td><td>${esc(p.sale.name)} on ${fmtD(p.sale.t)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No payments yet.</div>'}</div>
+ <h3 style="margin:14px 0 6px;font-size:16px">Purchase history</h3><div class="tw"><table style="min-width:0"><thead><tr><th>Date</th><th>Brand</th><th class="n">Sticks</th><th class="n">Amount</th><th>Paid by</th></tr></thead><tbody>${[...g.sales].sort((a,b)=>b.t-a.t).map(x=>`<tr><td>${fmtDT(x.t)}</td><td>${esc(x.name)}</td><td class="n">${x.sticks}</td><td class="n">${money(x.rev)}</td><td>${pmLabel(x)}</td></tr>`).join('')}</tbody></table></div></div>`:'';
+}
+function purch(){
+ const tot=D.restocks.reduce((n,r)=>n+ptotal(r),0),paid=D.restocks.reduce((n,r)=>n+ppaid(r),0),owe=D.restocks.reduce((n,r)=>n+pbal(r),0);
+ $('#purS').innerHTML=`<div class="card"><div class="lbl">Total purchased</div><div class="big">${money(tot)}</div><span class="mut">${D.restocks.length} purchases</span></div><div class="card"><div class="lbl">Paid to suppliers</div><div class="big">${money(paid)}</div></div><div class="card"><div class="lbl">Supplier liabilities</div><div class="big ${owe>0?'rd':'gr'}">${money(owe)}</div><span class="mut">still owed to suppliers</span></div>`;
+ const m={};D.restocks.filter(r=>r.sup).forEach(r=>{const k=nk(r.sup),g=m[k]=m[k]||{name:r.sup,ph:'',l:[]};if(r.supph)g.ph=r.supph;g.l.push(r)});
+ SG=Object.values(m).sort((a,b)=>b.l.reduce((n,r)=>n+pbal(r),0)-a.l.reduce((n,r)=>n+pbal(r),0));
+ $('#supT').innerHTML=SG.length?`<table><thead><tr><th>Supplier</th><th>Contact</th><th class="n">Purchased</th><th class="n">Paid</th><th class="n">Outstanding</th><th>Last purchase</th><th></th></tr></thead><tbody>${SG.map((g,n)=>{const o=g.l.reduce((x,r)=>x+pbal(r),0);return`<tr><td><b>${esc(g.name)}</b></td><td>${esc(g.ph||'')}</td><td class="n">${money(g.l.reduce((x,r)=>x+ptotal(r),0))}</td><td class="n">${money(g.l.reduce((x,r)=>x+ppaid(r),0))}</td><td class="n ${o>0?'rd':''}">${money(o)}</td><td>${fmtD(Math.max(...g.l.map(r=>r.t)))}</td><td class="n">${o>0?`<button class="btn sm gr" data-a="pg" data-n="${n}">Pay supplier</button>`:''}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No suppliers yet. Add one with New purchase.</div>';
+ const l=[...D.restocks].sort((a,b)=>b.t-a.t);
+ $('#purT').innerHTML=l.length?`<table><thead><tr><th>Date</th><th>Supplier</th><th>Product</th><th class="n">Packs</th><th class="n">Price / pack</th><th class="n">Total</th><th class="n">Paid</th><th class="n">Balance</th><th>Status</th><th></th></tr></thead><tbody>${l.map(r=>{const b=pbal(r),st=!pknown(r)?'<span class="pill a">Payment not recorded</span>':b<=0?'<span class="pill g">Paid</span>':ppaid(r)>0?'<span class="pill a">Part paid</span>':'<span class="pill r">Unpaid</span>';return`<tr><td>${fmtD(r.t)}</td><td>${r.sup?esc(r.sup):'<span class="mut">Not recorded</span>'}</td><td>${esc(r.name)}</td><td class="n">${r.packs}</td><td class="n">${money(r.buy)}</td><td class="n">${money(ptotal(r))}</td><td class="n">${pknown(r)?money(ppaid(r)):'-'}</td><td class="n">${pknown(r)?money(b):'-'}</td><td>${st}</td><td class="n">${b>0?`<button class="btn sm" data-a="ps" data-id="${r.id}">Pay</button>`:''}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No purchases yet.</div>';
+}
+function moves(){
+ const m=[];
+ D.sales.forEach(s=>{if(s.pm=='cash'||s.pm=='gpay')m.push({t:s.t,m:s.pm,a:s.rev,k:'Sale'});if(s.pm=='credit')payments(s).forEach(p=>m.push({t:p.t,m:p.m,a:p.a,k:'Credit repayment'}))});
+ D.restocks.forEach(r=>(r.pay||[]).forEach(p=>m.push({t:p.t,m:p.m,a:-p.a,k:'Supplier payment'})));
+ D.exp.forEach(e=>m.push({t:new Date(e.d+'T12:00:00').getTime(),m:e.pm||'cash',a:-e.amt,k:'Expense',u:!e.pm}));
+ return m;
+}
+function finance(){
+ const f=$('#fn-from').value,t=$('#fn-to').value,inR=x=>(!f||day(x)>=f)&&(!t||day(x)<=t),c=cfg(),od=c.openDate||'';
+ const mv=moves(),per=mv.filter(x=>inR(x.t)),sm=(l)=>l.reduce((n,x)=>n+Math.abs(x.a),0);
+ const cashIn=sm(per.filter(x=>x.m=='cash'&&x.a>0)),gpayIn=sm(per.filter(x=>x.m=='gpay'&&x.a>0));
+ const ss=D.sales.filter(x=>inR(x.t)),rev=sum(ss,'rev'),cogs=sum(ss,'cost'),gross=rev-cogs;
+ const ex=D.exp.filter(e=>(!f||e.d>=f)&&(!t||e.d<=t)),exT=sum(ex,'amt'),net=gross-exT;
+ const cOut=D.sales.reduce((n,x)=>n+bal(x),0),sOut=D.restocks.reduce((n,r)=>n+pbal(r),0);
+ const cashBal=(c.openCash||0)+mv.filter(x=>x.m=='cash'&&(!od||day(x.t)>=od)).reduce((n,x)=>n+x.a,0);
+ const K=(l,v,cl)=>`<div class="card"><div class="lbl">${l}</div><div class="big ${cl||''}">${v}</div></div>`;
+ $('#finK').innerHTML=K('Cash received',money(cashIn))+K('GPay received',money(gpayIn))+K('Customer credit outstanding',money(cOut),'am')+K('Supplier liabilities',money(sOut),sOut>0?'rd':'')+K('Business expenses',money(exT),'rd')+K('Current cash balance',money(cashBal),cashBal<0?'rd':'')+K('Gross profit',money(gross),gross<0?'rd':'gr')+K('Net profit',money(net),net<0?'rd':'gr');
+ const bc={};ex.forEach(e=>{const k=e.cat||'Uncategorised';bc[k]=(bc[k]||0)+e.amt});
+ const R=(l,v,cl,b)=>`<div><span>${b?'<b>'+l+'</b>':l}</span><span class="${cl||''}">${b?'<b>'+v+'</b>':v}</span></div>`;
+ $('#pnl').innerHTML=R('Sales revenue',money(rev))+R('Cost of goods sold','- '+money(cogs))+R('Gross profit',money(gross),gross<0?'rd':'gr',1)+Object.entries(bc).map(([k,v])=>R(k,'- '+money(v),'mut')).join('')+R('Operating expenses','- '+money(exT))+R('Net profit',money(net),net<0?'rd':'gr',1)+R('Profit margin',(rev?Math.round(net/rev*1000)/10:0)+'%','mut');
+ const by=(k,mm,sg)=>sm(per.filter(x=>x.k==k&&(!mm||x.m==mm)&&(sg?x.a>0:x.a<0)));
+ $('#mvS').innerHTML=R('Sales received in cash',money(by('Sale','cash',1)))+R('Sales received by GPay',money(by('Sale','gpay',1)))+R('Credit repayments in cash',money(by('Credit repayment','cash',1)))+R('Credit repayments by GPay',money(by('Credit repayment','gpay',1)))+R('Supplier payments','- '+money(by('Supplier payment',0,0)))+R('Expenses paid','- '+money(by('Expense',0,0)))+R('Credit given (not cash yet)',money(sum(ss.filter(x=>x.pm=='credit'),'rev')),'am')+(mv.some(x=>x.u)?'<div class="mut" style="font-size:13px;display:block">Some expenses have no payment method. They are counted as cash.</div>':'')+(c.openDate?'':'<div class="mut" style="font-size:13px;display:block">Opening cash is not set. Balance starts from zero.</div>');
+ const bd={};mv.filter(x=>x.m=='cash'&&(!od||day(x.t)>=od)).forEach(x=>{const d=day(x.t),r=bd[d]=bd[d]||{i:0,o:0};x.a>0?r.i+=x.a:r.o+=-x.a});
+ D.recon.forEach(r=>{bd[r.id]=bd[r.id]||{i:0,o:0}});
+ let run=c.openCash||0;const rows=Object.keys(bd).sort().map(d=>{run+=bd[d].i-bd[d].o;return{d,i:bd[d].i,o:bd[d].o,e:run,r:D.recon.find(x=>x.id==d)}}).reverse().filter(r=>(!f||r.d>=f)&&(!t||r.d<=t)).slice(0,31);
+ $('#recT').innerHTML=rows.length?`<table><thead><tr><th>Date</th><th class="n">Cash in</th><th class="n">Cash out</th><th class="n">Expected closing</th><th class="n">Counted</th><th class="n">Difference</th></tr></thead><tbody>${rows.map(r=>{const df=r.r?r.r.counted-r.e:null;return`<tr><td>${r.d}</td><td class="n">${money(r.i)}</td><td class="n">${money(r.o)}</td><td class="n">${money(r.e)}</td><td class="n"><input type="number" step="any" data-rc="${r.d}" value="${r.r?r.r.counted:''}" style="width:110px;padding:6px 8px;margin:0" aria-label="Counted cash for ${r.d}"></td><td class="n ${df==null?'mut':Math.abs(df)<0.01?'gr':'rd'}">${df==null?'-':Math.abs(df)<0.01?'Matches':money(df)}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No cash movements yet.</div>';
+}
+function mov(){
+ $('#mvT').innerHTML=D.items.length?`<table><thead><tr><th>Product</th><th class="n">Opening</th><th class="n">+ Purchased</th><th class="n">- Sold</th><th class="n">+/- Adjust</th><th class="n">= Available</th><th class="n">Check</th></tr></thead><tbody>${D.items.map(i=>{
+  const pur=D.restocks.filter(r=>r.item==i.id).reduce((n,r)=>n+Math.round(r.packs*r.pack),0),sd=sold(i.id),ad=D.adj.filter(a=>a.item==i.id).reduce((n,a)=>n+a.d,0),has=i.open!=null,ex=has?i.open+pur-sd+ad:null,im=i.stock-pur+sd-ad;
+  return`<tr><td><b>${esc(i.name)}</b><div class="mut" style="font-size:12.5px">${esc(i.sku||'no ID')}${i.brand?' · '+esc(i.brand):''}</div></td><td class="n">${has?i.open:`<span class="mut">${im} (implied)</span>`}</td><td class="n">+${pur}</td><td class="n">-${sd}</td><td class="n">${ad>0?'+':''}${ad}</td><td class="n"><b>${i.stock}</b></td><td class="n">${has?(ex===i.stock?'<span class="gr">✓</span>':`<span class="rd">off by ${i.stock-ex}</span>`):'<span class="mut">-</span>'}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No products.</div>';
+}
+function adjH(){
+ const l=[...D.adj].sort((a,b)=>b.t-a.t).slice(0,30);
+ $('#adjT').innerHTML=l.length?`<table><thead><tr><th>Date</th><th>Product</th><th class="n">Change (sticks)</th><th>Reason</th><th>By</th></tr></thead><tbody>${l.map(a=>`<tr><td>${fmtDT(a.t)}</td><td>${esc(a.name)}</td><td class="n ${a.d<0?'rd':'gr'}">${a.d>0?'+':''}${a.d}</td><td>${esc(a.why)}</td><td>${esc(a.by||'')}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No stock adjustments yet.</div>';
+}
+function alerts(){
+ const out=D.items.filter(i=>i.stock<=0),low=D.items.filter(i=>i.stock>0&&packs(i)<=i.min);
+ $('#alerts').innerHTML=(out.length?`<div class="warn"><b class="rd">Out of stock:</b> ${out.map(i=>esc(i.name)).join(', ')}</div>`:'')+(low.length?`<div class="warn"><b class="am">Low stock:</b> ${low.map(i=>esc(i.name)+' ('+packs(i)+' packs)').join(', ')}</div>`:'');
+}
+function audView(){
+ const dq=[],W=(t,b)=>dq.push(`<div class="warn">${t}${b||''}</div>`);
+ const nb=D.sales.filter(x=>!x.by).length;if(nb)W(`<b>${nb}</b> sales have no seller recorded. They show as unknown. Nothing is guessed.`);
+ const nc=D.sales.filter(x=>x.pm=='credit'&&!nk(x.cust)).length;if(nc)W(`<b>${nc}</b> credit sales have no customer name.`);
+ if(SGL.length)W(`<b>${SGL.length}</b> groups of customer names look like duplicates. Review them in Customers.`);
+ const g={};D.items.forEach(i=>{(g[nk(i.name)]=g[nk(i.name)]||[]).push(i)});
+ Object.values(g).filter(v=>v.length>1).forEach(v=>W(`Duplicate product names: <b>${v.map(i=>esc(i.name)).join('</b> and <b>')}</b>. `,`<button class="btn sm" data-a="mp" data-id="${v[1].id}" data-t="${v[0].id}">Merge into ${esc(v[0].name)}</button>`));
+ const ns=D.items.filter(i=>!i.sku).length;if(ns)W(`<b>${ns}</b> products have no product ID. `,`<button class="btn sm" data-a="sku">Assign IDs automatically</button>`);
+ const ne=D.exp.filter(e=>!e.cat||!e.pm).length;if(ne)W(`<b>${ne}</b> expenses have no category or payment method.`);
+ const np=D.restocks.filter(r=>!pknown(r)).length;if(np)W(`<b>${np}</b> purchases have no supplier or payment record. They are left out of supplier liabilities and cash flow.`);
+ const ng=D.items.filter(i=>i.stock<0);if(ng.length)W(`Negative stock: <b>${ng.map(i=>esc(i.name)).join(', ')}</b>.`);
+ const mm=D.items.filter(i=>i.open!=null&&(i.open+D.restocks.filter(r=>r.item==i.id).reduce((n,r)=>n+Math.round(r.packs*r.pack),0)-sold(i.id)+D.adj.filter(a=>a.item==i.id).reduce((n,a)=>n+a.d,0))!==i.stock);if(mm.length)W(`Stock does not add up for: <b>${mm.map(i=>esc(i.name)).join(', ')}</b>. Check Stock movement.`);
+ $('#dqL').innerHTML=dq.length?dq.join(''):'<div class="empty">No problems found.</div>';
+ const l=[...D.audit].sort((a,b)=>b.t-a.t).slice(0,300);
+ $('#audT').innerHTML=l.length?`<table><thead><tr><th>Date</th><th>By</th><th>Action</th><th>Details</th></tr></thead><tbody>${l.map(a=>`<tr><td>${fmtDT(a.t)}</td><td>${esc(a.by||'')}</td><td>${esc(a.act)}</td><td>${esc(a.det)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No changes logged yet.</div>';
 }
 function ask(msg,yes,label){
  const d=$('#dlg');
@@ -1766,13 +1931,66 @@ function inv(){
  $('#invS').innerHTML=`<div class="card"><div class="lbl">Total sticks left</div><div class="big">${sticks}</div><span class="mut">${D.items.length} brands</span></div><div class="card"><div class="lbl">Stock cost</div><div class="big am">${money(t.inv)}</div><span class="mut">at wholesale price</span></div><div class="card"><div class="lbl">Low or out of stock</div><div class="big ${low?'rd':'gr'}">${low}</div><span class="mut">${low?'brands to reorder':'all stocked'}</span></div>`;
  const cmp={name:(a,b)=>a.name.localeCompare(b.name),low:(a,b)=>a.stock-b.stock,high:(a,b)=>b.stock-a.stock,val:(a,b)=>b.stock*cps(b)-a.stock*cps(a),pro:(a,b)=>(b.sell-b.buy)-(a.sell-a.buy)};
  const l=D.items.filter(i=>i.name.toLowerCase().includes(iq)&&(!ilow||packs(i)<=i.min)).sort(cmp[isort]);
- $('#invT').innerHTML=l.length?l.map(i=>{const p=packs(i),st=p<=0?['Out','r']:p<=i.min?['Low','a']:null,fp=Math.floor(i.stock/i.pack),lo=i.stock%i.pack;return`<div class="ic"><div class="row"><b style="font-size:19px">${esc(i.name)}</b>${st?`<span class="pill ${st[1]}">${st[0]}</span>`:''}</div><div class="isk"><b>${i.stock}</b> sticks left</div><div class="mut">${fp} full ${fp==1?'pack':'packs'} + ${lo} loose</div><div class="im"><div>Sell / stick<b>${money(i.stick)}</b></div><div>Profit / pack<b class="${i.sell-i.buy<0?'rd':'gr'}">${money(i.sell-i.buy)}</b></div><div>Stock cost<b>${money(i.stock*cps(i))}</b></div></div><div class="ia"><button class="btn" data-a="re" data-id="${i.id}">Restock</button><button class="btn" data-a="ed" data-id="${i.id}">Edit</button><button class="btn rd" data-a="del" data-id="${i.id}">Delete</button></div></div>`}).join(''):`<div class="empty card">${D.items.length?'No brands match.':'No items yet. Press Add Item to enter your first brand.'}</div>`;
+ $('#invT').innerHTML=l.length?l.map(i=>{const p=packs(i),st=p<=0?['Out','r']:p<=i.min?['Low','a']:null,fp=Math.floor(i.stock/i.pack),lo=i.stock%i.pack;return`<div class="ic"><div class="row"><b style="font-size:19px">${esc(i.name)}</b>${st?`<span class="pill ${st[1]}">${st[0]}</span>`:''}</div><div class="isk"><b>${i.stock}</b> sticks left</div><div class="mut">${fp} full ${fp==1?'pack':'packs'} + ${lo} loose</div><div class="im"><div>Sell / stick<b>${money(i.stick)}</b></div><div>Profit / pack<b class="${i.sell-i.buy<0?'rd':'gr'}">${money(i.sell-i.buy)}</b></div><div>Stock cost<b>${money(i.stock*cps(i))}</b></div></div><div class="ia"><button class="btn" data-a="re" data-id="${i.id}">Restock</button><button class="btn" data-a="adj" data-id="${i.id}">Adjust</button><button class="btn" data-a="ed" data-id="${i.id}">Edit</button><button class="btn rd" data-a="del" data-id="${i.id}">Delete</button></div></div>`}).join(''):`<div class="empty card">${D.items.length?'No brands match.':'No items yet. Press Add Item to enter your first brand.'}</div>`;
 }
+const nextSku=()=>{let n=D.items.filter(x=>x.sku).length+1,k;do{k='HC-'+String(n++).padStart(3,'0')}while(D.items.some(x=>x.sku==k));return k};
 function itemForm(i){
- form(i?'Edit item':'Add item',[['name','Brand name','text',i?.name,'required'],['pack','Sticks per pack','number',i?.pack||20,'required min="1" step="1"'],['buy','Wholesale cost per pack (₹)','number',i?.buy,'required min="0"'],['sell','Selling price per pack (₹)','number',i?.sell,'required min="0"'],['stick','Selling price per stick (₹) - blank = auto','number',i?.stick,'min="0"'],['packs','Stock in packs (0 if none yet)','number',i?packs(i):'','min="0"'],['min','Reorder level (packs)','number',i?.min??2,'min="0"']],o=>{
-  const pack=+o.pack,it={id:i?.id||uid(),name:o.name.trim(),pack,buy:+o.buy,sell:+o.sell,stick:o.stick===''?Math.ceil(+o.sell/pack):+o.stick,stock:Math.round((+o.packs||0)*pack),min:o.min===''?2:+o.min,o:i?.o||Date.now()};
-  i?Object.assign(i,it):D.items.push(it);save();render();toast('Item saved')});
+ form(i?'Edit item':'Add item',[['name','Product name','text',i?.name,'required'],['brand','Brand (optional)','text',i?.brand||''],['sku','Product ID / SKU (blank = auto)','text',i?.sku||''],['pack','Sticks per pack','number',i?.pack||20,'required min="1" step="1"'],['buy','Wholesale cost per pack (₹)','number',i?.buy,'required min="0"'],['sell','Selling price per pack (₹)','number',i?.sell,'required min="0"'],['stick','Selling price per stick (₹) - blank = auto','number',i?.stick,'min="0"'],['packs','Stock in packs (0 if none yet)','number',i?packs(i):'','min="0"'],['open','Opening stock in packs when you started tracking (optional)','number',i&&i.open!=null?Math.round(i.open/i.pack*100)/100:'','min="0"'],['min','Reorder level (packs)','number',i?.min??2,'min="0"']].concat(i?[['why','Reason, if you changed the stock','text','']]:[]),o=>{
+  const pack=+o.pack,nm=o.name.trim();
+  if((!i||nk(i.name)!==nk(nm))&&D.items.some(x=>x.id!=i?.id&&nk(x.name)==nk(nm)))throw new Error('A product named "'+nm+'" already exists');
+  const sku=(o.sku.trim()||i?.sku||nextSku()).toUpperCase();
+  if(D.items.some(x=>x.id!=i?.id&&x.sku&&x.sku.toUpperCase()==sku))throw new Error('Product ID '+sku+' is already used');
+  const stock=Math.round((+o.packs||0)*pack);
+  const it={id:i?.id||uid(),name:nm,brand:o.brand.trim(),sku,pack,buy:+o.buy,sell:+o.sell,stick:o.stick===''?Math.ceil(+o.sell/pack):+o.stick,stock,min:o.min===''?2:+o.min,o:i?.o||Date.now()};
+  if(o.open!=='')it.open=Math.round(+o.open*pack);else if(i&&i.open!=null)it.open=i.open;
+  if(i){
+   if(stock!==i.stock){const dl=stock-i.stock;D.adj.push({id:uid(),t:Date.now(),item:i.id,name:nm,d:dl,why:(o.why||'').trim()||'Manual edit',by:BY});aud('Stock edit',nm+': '+(dl>0?'+':'')+dl+' sticks')}
+   if(it.buy!==i.buy||it.sell!==i.sell||it.stick!==i.stick)aud('Price change',nm+': cost '+i.buy+'→'+it.buy+', pack '+i.sell+'→'+it.sell+', stick '+i.stick+'→'+it.stick);
+   Object.assign(i,it);
+  }else{D.items.push(it);aud('Product added',nm+' ('+sku+')')}
+  save();render();toast('Item saved')});
 }
+function adjustForm(i){
+ form('Adjust stock: '+esc(i.name),[['d','Change in sticks (+ add, - remove)','number','','required'],['why','Reason (damage, count fix, free sample...)','text','','required']],o=>{
+  const d=Math.round(+o.d);if(!d)throw new Error('Change cannot be 0');if(i.stock+d<0)throw new Error('Stock would go below 0');
+  i.stock+=d;D.adj.push({id:uid(),t:Date.now(),item:i.id,name:i.name,d,why:o.why.trim(),by:BY});aud('Stock adjustment',i.name+': '+(d>0?'+':'')+d+' sticks, '+o.why.trim());
+  save();render();toast('Stock adjusted')});
+}
+const ptotal=r=>r.packs*r.buy,ppaid=r=>(r.pay||[]).reduce((n,p)=>n+p.a,0),pknown=r=>r.sup!=null||r.pay!=null;
+const pbal=r=>pknown(r)?Math.max(0,Math.round((ptotal(r)-ppaid(r))*100)/100):0;
+function purchaseForm(it){
+ const f=[];if(!it)f.push(['item','Product','select',D.items[0]?.id,'',D.items.map(x=>[x.id,x.name])]);
+ f.push(['q','Packs bought','number','','required min="0.01"'],['buy','Wholesale cost per pack (₹)','number',it?it.buy:'','required min="0"'],['sup','Supplier name','text','','required'],['supph','Supplier contact (optional)','text',''],['paid','Amount paid now (₹, type 0 if unpaid)','number','','required min="0"'],['pm','Paid by','select','cash','',[['cash','Cash'],['gpay','GPay']]]);
+ form('New purchase'+(it?': '+esc(it.name):''),f,o=>{
+  const i=it||D.items.find(x=>x.id==o.item);if(!i)throw new Error('Pick a product');
+  const q=+o.q,buy=+o.buy,total=q*buy,paid=+o.paid;
+  if(paid>total+0.001)throw new Error('Paid amount is more than the total '+money(total));
+  i.buy=buy;i.stock+=Math.round(q*i.pack);
+  D.restocks.push({id:uid(),t:Date.now(),item:i.id,name:i.name,packs:q,pack:i.pack,buy,sell:i.sell,stick:i.stick,sup:o.sup.trim(),supph:o.supph.trim(),pay:paid>0?[{t:Date.now(),a:paid,m:o.pm}]:[]});
+  aud('Purchase',i.name+' '+q+' packs @ '+buy+' from '+o.sup.trim()+', paid '+paid);
+  save();render();toast('Purchase saved. Stock updated');
+ });
+}
+function restock(i){purchaseForm(i)}
+function paySupplier(list){
+ list=list.filter(r=>pbal(r)>0).sort((a,b)=>a.t-b.t);const owe=list.reduce((n,r)=>n+pbal(r),0);if(!owe)return toast('Nothing owed');
+ const d=$('#dlg'),who=list[0].sup||'Supplier';
+ d.innerHTML=`<form novalidate><h3>Pay ${esc(who)}</h3><p style="margin-top:10px">You owe ${money(owe)}.</p><label>Amount paid (₹)<input id="ra" type="number" step="any" min="1" value="${owe}"></label><div id="ferr" class="rd" role="alert" style="min-height:20px;margin-top:8px"></div><div class="row" style="margin-top:10px;justify-content:flex-end"><button type="button" class="btn" id="dx">Cancel</button><button type="button" class="btn" id="s1">Cash</button><button type="button" class="btn gr" id="s2">GPay</button></div></form>`;
+ d.hidden=false;$('#dx').onclick=()=>{d.hidden=true};d.onclick=e=>{if(e.target==d)d.hidden=true};
+ const go=m=>{let a=Math.round((+$('#ra').value)*100)/100;if(!(a>0)||a>owe+0.001)return $('#ferr').textContent='Enter an amount from 1 to '+owe;const t=Date.now(),a0=a;
+  for(const r of list){if(a<=0)break;const x=Math.min(a,pbal(r));r.pay=[...(r.pay||[]),{t,a:x,m}];a=Math.round((a-x)*100)/100}
+  aud('Supplier payment',who+' '+money(a0)+' by '+m);d.hidden=true;save();render();toast('Payment saved')};
+ $('#s1').onclick=()=>go('cash');$('#s2').onclick=()=>go('gpay');
+}
+function mergeProducts(srcId,tgtId){
+ const x=D.items.find(i=>i.id==srcId),t=D.items.find(i=>i.id==tgtId);if(!x||!t)return;
+ ask('Merge "'+x.name+'" into "'+t.name+'"? Stock, sales and purchase history move to "'+t.name+'". This corrects old records and cannot be undone.',()=>{
+  t.stock+=x.stock;
+  ['sales','restocks','adj'].forEach(c=>D[c].forEach(r=>{if(r.item==x.id){r.item=t.id;r.name=t.name}}));
+  D.items=D.items.filter(i=>i.id!=x.id);aud('Products merged',x.name+' into '+t.name);save();render();toast('Products merged')},'Merge');
+}
+function autoSku(){const l=D.items.filter(i=>!i.sku).sort((a,b)=>(a.o||0)-(b.o||0));l.forEach(i=>{i.sku=nextSku()});aud('Product IDs assigned',l.length+' products');save();render();toast('Product IDs assigned')}
+
 function rsCalc(){
  const out={};
  D.items.forEach(it=>{
@@ -1790,13 +2008,6 @@ function rsCalc(){
 function rs(){
  const l=[...D.restocks].sort((a,b)=>b.t-a.t).slice(0,40),fi=rsCalc();
  $('#rsT').innerHTML=l.length?`<table><thead><tr><th>Date</th><th>Brand</th><th class="n">Packs</th><th class="n">Cost</th><th class="n">Sticks sold</th><th class="n">Profit so far</th><th class="n">Full batch profit</th></tr></thead><tbody>${l.map(r=>{const tot=Math.round(r.packs*r.pack),cost=r.packs*r.buy,f=fi[r.id]||{sold:0,rev:0},pf=f.rev-f.sold*r.buy/r.pack,full=r.stick?tot*r.stick-cost:null;return`<tr><td>${new Date(r.t).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td><td>${esc(r.name)}</td><td class="n">${r.packs}</td><td class="n">${money(cost)}</td><td class="n">${f.sold} / ${tot}</td><td class="n ${pf<0?'rd':'gr'}">${money(pf)}</td><td class="n ${full==null?'mut':full<0?'rd':'gr'}">${full==null?'-':money(full)}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">No restocks recorded yet. Press Restock on a brand.</div>';
-}
-function restock(i){
- form('Restock '+esc(i.name),[['q','Packs bought','number','','required min="0.01"'],['buy','Wholesale cost per pack (₹)','number',i.buy,'required min="0"']],o=>{
-  const q=+o.q,buy=+o.buy;i.buy=buy;i.stock+=Math.round(q*i.pack);
-  D.restocks.push({id:uid(),t:Date.now(),item:i.id,name:i.name,packs:q,pack:i.pack,buy,sell:i.sell,stick:i.stick});
-  save();render();toast('Restocked. Expected profit '+money(q*(i.sell-buy))+' at pack price');
- });
 }
 
 let cart=[];
@@ -1833,8 +2044,10 @@ function pay(){
 }
 
 function expn(){
- const l=[...D.exp].sort((a,b)=>b.d.localeCompare(a.d));
- $('#expT').innerHTML=l.length?`<table><thead><tr><th>Date</th><th>Description</th><th class="n">Amount</th><th></th></tr></thead><tbody>${l.map(e=>`<tr><td>${e.d}</td><td>${esc(e.desc)}</td><td class="n rd">${money(e.amt)}</td><td class="n"><button class="btn sm rd" data-a="dx" data-id="${e.id}">Delete</button></td></tr>`).join('')}</tbody><tfoot><tr><td colspan="2"><b>Total</b></td><td class="n"><b>${money(sum(D.exp,'amt'))}</b></td><td></td></tr></tfoot></table>`:'<div class="empty">No expenses logged. Add transport, bags, rent or anything else you spend on the business.</div>';
+ const l=[...D.exp].sort((a,b)=>b.d.localeCompare(a.d)),bc={};
+ D.exp.forEach(e=>{const k=e.cat||'Uncategorised';bc[k]=(bc[k]||0)+e.amt});
+ const chips=Object.keys(bc).length?`<div class="tools" style="margin-bottom:14px">${Object.entries(bc).map(([k,v])=>`<span class="pill a">${esc(k)}: ${money(v)}</span>`).join('')}</div>`:'';
+ $('#expT').innerHTML=l.length?chips+`<table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Paid by</th><th class="n">Amount</th><th></th></tr></thead><tbody>${l.map(e=>`<tr><td>${e.d}</td><td>${e.cat?esc(e.cat):'<span class="mut">Uncategorised</span>'}</td><td>${esc(e.desc)}</td><td>${e.pm=='gpay'?'GPay':e.pm=='cash'?'Cash':'<span class="mut">Not recorded</span>'}</td><td class="n rd">${money(e.amt)}</td><td class="n"><button class="btn sm rd" data-a="dx" data-id="${e.id}">Delete</button></td></tr>`).join('')}</tbody><tfoot><tr><td colspan="4"><b>Total</b></td><td class="n"><b>${money(sum(D.exp,'amt'))}</b></td><td></td></tr></tfoot></table>`:'<div class="empty">No expenses logged. Add transport, packaging, commission or anything else you spend on the business.</div>';
 }
 
 function filtered(){
@@ -1851,37 +2064,53 @@ function log(){
 
 /* ---------- wiring ---------- */
 function show(v){document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id=='v-'+v));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));if(v=='dash')draw();scrollTo(0,0)}
-function render(){dash();inv();reorder();rs();posFill();expn();log();psl();credit();dayRep()}
+function render(){cidx();SGL=suggestions();dash();inv();reorder();rs();posFill();expn();log();psl();credit();dayRep();alerts();mov();adjH();customers();purch();finance();audView()}
 $('#nav').onclick=e=>{if(e.target.dataset.v)show(e.target.dataset.v)};
 document.body.addEventListener('click',e=>{
  const b=e.target.closest('[data-a],[data-go]');if(!b)return;
  if(b.dataset.go)return show(b.dataset.go);
  const id=b.dataset.id,a=b.dataset.a,i=D.items.find(x=>x.id==id);
  if(a=='st')return settle(id);
+ if(a=='adj')return adjustForm(i);
+ if(a=='cv'){const g=CA[+b.dataset.n];CV=g?g.key:null;return customers()}
+ if(a=='cm')return mergeCluster(+b.dataset.n,true);
+ if(a=='cd')return mergeCluster(+b.dataset.n,false);
+ if(a=='ca')return aliasForm();
+ if(a=='cp')return phoneForm();
+ if(a=='rc2'){const g=CA.find(x=>x.key==CV);return g&&receive(g.sales.filter(x=>x.pm=='credit'))}
+ if(a=='ps')return paySupplier([D.restocks.find(x=>x.id==id)]);
+ if(a=='pg')return paySupplier(SG[+b.dataset.n].l);
+ if(a=='sku')return autoSku();
+ if(a=='mp')return mergeProducts(id,b.dataset.t);
  if(a=='rc')return receive(CG[+b.dataset.n].l);
- if(a=='pu')return ask('Undo this whole bill? The sticks go back into stock.',()=>{D.sales.filter(x=>x.bill===id&&x.by=='Partner').forEach(x=>{const it=D.items.find(y=>y.id==x.item);if(it)it.stock+=x.sticks});D.sales=D.sales.filter(x=>!(x.bill===id&&x.by=='Partner'));save();render();toast('Bill undone')},'Undo bill');
+ if(a=='pu')return ask('Undo this whole bill? The sticks go back into stock.',()=>{D.sales.filter(x=>x.bill===id&&x.by=='Partner').forEach(x=>{const it=D.items.find(y=>y.id==x.item);if(it)it.stock+=x.sticks});aud('Bill undone by partner',id);D.sales=D.sales.filter(x=>!(x.bill===id&&x.by=='Partner'));save();render();toast('Bill undone')},'Undo bill');
  if(a=='ts')return addCart(id,'stick');
  if(a=='tp')return addCart(id,'pack');
  if(a=='cm'||a=='cp'){const c=cart[b.dataset.n];if(a=='cm'){if(--c.qty<=0)cart.splice(b.dataset.n,1)}else{if(sticksIn(c.item)+unitSt({...c,qty:1})>itm(c.item).stock)return toast('Not enough stock');c.qty++}return cartR()}
  if(a=='ed')itemForm(i);
  if(a=='re')restock(i);
- if(a=='del')return ask('Delete '+i.name+'? Past sales stay in the log.',()=>{D.items=D.items.filter(x=>x.id!=id);save();render()});
- if(a=='dx'){D.exp=D.exp.filter(x=>x.id!=id);save();render()}
- if(a=='ds'){const s=D.sales.find(x=>x.id==id),it=D.items.find(x=>x.id==s.item);return ask('Undo this sale and put the sticks back in stock?',()=>{if(it)it.stock+=s.sticks;D.sales=D.sales.filter(x=>x.id!=id);save();render()},'Undo sale')}
+ if(a=='del')return ask('Delete '+i.name+'? Past sales stay in the log.',()=>{aud('Product deleted',i.name+' ('+(i.sku||'no ID')+'), stock '+i.stock+' sticks');D.items=D.items.filter(x=>x.id!=id);save();render()});
+ if(a=='dx'){const e=D.exp.find(x=>x.id==id);if(e)aud('Expense deleted',(e.cat||'')+' '+e.desc+' '+money(e.amt));D.exp=D.exp.filter(x=>x.id!=id);save();render()}
+ if(a=='ds'){const s=D.sales.find(x=>x.id==id),it=D.items.find(x=>x.id==s.item);return ask('Undo this sale and put the sticks back in stock?',()=>{if(it)it.stock+=s.sticks;aud('Sale undone',s.name+' '+s.sticks+' sticks '+money(s.rev));D.sales=D.sales.filter(x=>x.id!=id);save();render()},'Undo sale')}
 });
 $('#addTop').onclick=$('#addBtn').onclick=()=>itemForm();
 $('#quick').onclick=()=>show('pos');
-$('#addExp').onclick=()=>form('Add expense',[['desc','What was it for?','text','','required'],['amt','Amount (₹)','number','','required min="0"'],['d','Date','date',day(Date.now()),'required']],o=>{D.exp.push({id:uid(),desc:o.desc.trim(),amt:+o.amt,d:o.d});save();render();toast('Expense added')});
+$('#addExp').onclick=()=>form('Add expense',[['desc','What was it for?','text','','required'],['cat','Category','select','Operating expenses','',CATS.map(c=>[c,c])],['amt','Amount (₹)','number','','required min="0"'],['d','Date','date',day(Date.now()),'required'],['pm','Paid by','select','cash','',[['cash','Cash'],['gpay','GPay']]]],o=>{D.exp.push({id:uid(),desc:o.desc.trim(),cat:o.cat,amt:+o.amt,d:o.d,pm:o.pm});aud('Expense',o.cat+': '+o.desc.trim()+' '+money(+o.amt));save();render();toast('Expense added')});
 $('#i-q').oninput=e=>{iq=e.target.value.toLowerCase();inv()};$('#i-s').onchange=e=>{isort=e.target.value;inv()};$('#i-l').onchange=e=>{ilow=e.target.checked;inv()};
-$('#pm-cash').onclick=()=>setPm('cash');$('#pm-gpay').onclick=()=>setPm('gpay');$('#pm-credit').onclick=()=>setPm('credit');$('#pay').onclick=pay;$('#d-date').onchange=dayRep;
+$('#pm-cash').onclick=()=>setPm('cash');$('#pm-gpay').onclick=()=>setPm('gpay');$('#pm-credit').onclick=()=>setPm('credit');$('#pay').onclick=pay;
+$('#newPur').onclick=()=>purchaseForm();$('#cu-q').oninput=customers;$('#fn-from').onchange=finance;$('#fn-to').onchange=finance;$('#bak2').onclick=()=>$('#bak').click();
+$('#openCash').onclick=()=>form('Opening cash',[['amt','Cash in hand at the start (₹)','number',cfg().openCash??'','required min="0"'],['d','From date','date',cfg().openDate||day(Date.now()),'required']],o=>{let c=D.settings.find(x=>x.id=='cfg');if(!c){c={id:'cfg'};D.settings.push(c)}c.openCash=+o.amt;c.openDate=o.d;aud('Opening cash set',money(+o.amt)+' from '+o.d);save();render();toast('Opening cash saved')});
+document.body.addEventListener('change',e=>{const d=e.target.dataset&&e.target.dataset.rc;if(!d)return;const v=e.target.value.trim(),ex=D.recon.find(x=>x.id==d);
+ if(v===''){if(ex){D.recon=D.recon.filter(x=>x.id!=d);save();render()}return}
+ if(ex)ex.counted=+v;else D.recon.push({id:d,d,counted:+v});aud('Cash counted',d+': '+money(+v));save();render()});$('#d-date').onchange=dayRep;
 const upd=()=>{$('#net').hidden=navigator.onLine};addEventListener('online',upd);addEventListener('offline',upd);upd();setInterval(psl,30000);$('#clr').onclick=()=>{cart=[];cartR()};$('#u-stick').onclick=()=>{pu='stick';tiles()};$('#u-pack').onclick=()=>{pu='pack';tiles()};
 document.body.addEventListener('input',e=>{if(e.target.classList.contains('pr')){cart[e.target.dataset.n].price=+e.target.value||0;cartSum()}});
 ['f-from','f-to','f-item'].forEach(k=>$('#'+k).onchange=log);$('#f-c').oninput=log;
 $('#csv').onclick=()=>{const r=[['Date','Brand','Customer','Phone','Paid by','Sold by','Qty','Unit','Revenue','Cost','Profit'],...filtered().map(s=>[new Date(s.t).toLocaleString('en-IN'),s.name,s.cust||'',s.ph||'',pmLabel(s),s.by||'',s.qty,s.unit,s.rev,s.cost,s.rev-s.cost])];dl('hostel-cig-sales.csv',r.map(x=>x.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')};
-$('#clrlog').onclick=()=>{if(!D.sales.length)return toast('The sales log is already empty');ask('Delete all '+D.sales.length+' sales from the log?\nStock levels and expenses stay as they are. This cannot be undone, so press Backup data first if you want a copy.',()=>{D.sales=[];save();render();toast('Sales log cleared')},'Clear all logs')};
+$('#clrlog').onclick=()=>{if(!D.sales.length)return toast('The sales log is already empty');ask('Delete all '+D.sales.length+' sales from the log?\nStock levels and expenses stay as they are. This cannot be undone, so press Backup data first if you want a copy.',()=>{aud('Sales log cleared',D.sales.length+' sales removed');D.sales=[];save();render();toast('Sales log cleared')},'Clear all logs')};
 $('#bak').onclick=()=>dl('hostel-cig-backup-'+day(Date.now())+'.json',JSON.stringify(D),'application/json');
 $('#rest').onclick=()=>$('#file').click();
-$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.items||!o.sales||!o.exp)throw 0;D=o;D.restocks=D.restocks||[];save();render();toast('Backup restored')}catch(x){toast('That file is not a Hostel Cig backup')}})};
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.items||!o.sales||!o.exp)throw 0;D=o;COLS.forEach(c=>{D[c]=D[c]||[]});aud('Backup restored','');save();render();toast('Backup restored')}catch(x){toast('That file is not a Hostel Cig backup')}})};
 function dl(n,c,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
 addEventListener('resize',()=>$('#v-dash').classList.contains('on')&&draw());
 if(LOCAL&&!D.seeded){['Marlboro','Mond','Esse','Platinum'].forEach(n=>{if(!D.items.some(i=>i.name.toLowerCase()==n.toLowerCase()))D.items.push({id:uid(),name:n,pack:20,buy:0,sell:0,stick:0,stock:0,min:2})});D.seeded=1;save()}
