@@ -1635,8 +1635,8 @@ const OWNER_EMAIL="hellopreator@gmail.com";
 /* ==================================================================== */
 const LOCAL=FIREBASE_CONFIG.apiKey.startsWith('PASTE');
 const K='hostelcig_v1';
-const COLS=['items','sales','exp','restocks','adj','audit','customers','settings','recon'];
-let D={items:[],sales:[],exp:[],restocks:[],adj:[],audit:[],customers:[],settings:[],recon:[]},DBX=null;const P={},Q={};COLS.forEach(c=>P[c]={});
+const COLS=['items','sales','exp','restocks','adj','audit','customers','settings','recon','limits'];
+let D={items:[],sales:[],exp:[],restocks:[],adj:[],audit:[],customers:[],settings:[],recon:[],limits:[]},DBX=null;const P={},Q={};COLS.forEach(c=>P[c]={});
 try{if(LOCAL)Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 const js=r=>JSON.stringify(r,Object.keys(r).sort());
 const RAW={items:[]},CH={},CS=new Set();let ADMIN=true,costsReady=false,BY='Owner',LEGS=false;
@@ -1672,8 +1672,8 @@ function seed(){
 }
 function subscribe(admin){
  ADMIN=admin;BY=admin?'Owner':'Partner';
- const ord={items:(a,b)=>(a.o||0)-(b.o||0)||String(a.name).localeCompare(b.name),sales:(a,b)=>a.t-b.t,exp:(a,b)=>a.d>b.d?1:a.d<b.d?-1:0,restocks:(a,b)=>a.t-b.t,adj:(a,b)=>a.t-b.t,audit:(a,b)=>a.t-b.t,customers:(a,b)=>String(a.name||'').localeCompare(b.name||''),settings:(a,b)=>0,recon:(a,b)=>a.id>b.id?1:-1};
- (admin?COLS:['items','sales']).forEach(c=>DBX.collection(c).onSnapshot(sn=>{
+ const ord={items:(a,b)=>(a.o||0)-(b.o||0)||String(a.name).localeCompare(b.name),sales:(a,b)=>a.t-b.t,exp:(a,b)=>a.d>b.d?1:a.d<b.d?-1:0,restocks:(a,b)=>a.t-b.t,adj:(a,b)=>a.t-b.t,audit:(a,b)=>a.t-b.t,customers:(a,b)=>String(a.name||'').localeCompare(b.name||''),settings:(a,b)=>0,recon:(a,b)=>a.id>b.id?1:-1,limits:(a,b)=>0};
+ (admin?COLS:['items','sales','limits']).forEach(c=>DBX.collection(c).onSnapshot(sn=>{
   const l=sn.docs.map(x=>({...x.data(),id:x.id})).sort(ord[c]);
   P[c]={};l.forEach(r=>P[c][r.id]=js(r));
   if(c=='items'){RAW.items=l;eff();if(admin&&!l.length)seed()}else{D[c]=l;if(c=='sales'){LEGS=l.some(r=>r.cost!=null);eff()}}
@@ -1770,8 +1770,8 @@ function credit(){
  D.sales.filter(s=>s.pm=='credit'&&bal(s)>0).forEach(s=>{const c=custOf(s)||{key:'?',name:'?',ph:''};const g=m[c.key]=m[c.key]||{name:c.name,ph:c.ph,l:[]};if(s.ph&&!g.ph)g.ph=s.ph;g.l.push(s)});
  CG=Object.values(m).map(g=>({...g,owe:g.l.reduce((n,s)=>n+bal(s),0)})).sort((a,b)=>b.owe-a.owe);
  const tot=CG.reduce((n,g)=>n+g.owe,0);
- $('#crS').innerHTML=`<div class="card"><div class="lbl">Total credit pending</div><div class="big am">${money(tot)}</div><span class="mut">${CG.length} customers</span></div>`;
- $('#crL').innerHTML=CG.length?CG.map((g,n)=>`<div class="ic"><div class="row"><b style="font-size:19px">${esc(g.name)}</b><b class="am">${money(g.owe)}</b></div><div class="mut">${g.ph?esc(g.ph)+' · ':''}${g.l.length} sales</div><div class="list">${g.l.sort((a,b)=>a.t-b.t).map(s=>`<div style="font-size:14px"><span>${new Date(s.t).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} · ${esc(s.name)} × ${s.sticks}</span><b>${money(bal(s))}</b></div>`).join('')}</div><div class="ia"><button class="btn gr" data-a="rc" data-n="${n}">Receive payment</button></div></div>`).join(''):'<div class="empty card">No credit pending.</div>';
+ $('#crS').innerHTML=`<div class="card"><div class="lbl">Total credit pending</div><div class="big am">${money(tot)}</div><span class="mut">${CG.length} customers</span></div><div class="card"><div class="lbl">Over the limit</div><div class="big ${CG.some(g=>g.owe>limitAmt())?'rd':'gr'}">${CG.filter(g=>g.owe>limitAmt()).length}</div><span class="mut">owe more than ${money(limitAmt())} · </span><button class="btn sm" data-a="lim">Change limit</button></div>`;
+ $('#crL').innerHTML=CG.length?CG.map((g,n)=>`<div class="ic"><div class="row"><b style="font-size:19px">${esc(g.name)}</b><span><b class="am">${money(g.owe)}</b> ${g.owe>limitAmt()?'<span class="pill r">Over '+money(limitAmt())+'</span>':''}</span></div><div class="mut">${g.ph?esc(g.ph)+' · ':''}${g.l.length} sales</div><div class="list">${g.l.sort((a,b)=>a.t-b.t).map(s=>`<div style="font-size:14px"><span>${new Date(s.t).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} · ${esc(s.name)} × ${s.sticks}</span><b>${money(bal(s))}</b></div>`).join('')}</div>${lastRem(g.name)?`<div class="mut" style="font-size:13px">Last reminder sent ${lastRem(g.name)}</div>`:''}<div class="ia"><button class="btn gr" data-a="rc" data-n="${n}">Receive payment</button><button class="btn ${g.owe>limitAmt()?'am':''}" data-a="wa" data-n="${n}">WhatsApp reminder</button></div></div>`).join(''):'<div class="empty card">No credit pending.</div>';
 }
 function dayRep(){
  const el=$('#d-date');if(!el.value)el.value=day(Date.now());const dt=el.value;
@@ -1857,7 +1857,7 @@ function customers(){
  $('#cuT').innerHTML=(l.length?`<table><thead><tr><th>Customer</th><th>Phone</th><th class="n">Purchases</th><th class="n">Visits</th><th class="n">Credit given</th><th class="n">Paid</th><th class="n">Outstanding</th><th>Last purchase</th></tr></thead><tbody>${l.map(g=>`<tr data-a="cv" data-n="${CA.indexOf(g)}"><td><b>${esc(g.name)}</b></td><td>${esc(g.ph||'')}</td><td class="n">${money(g.buy)}</td><td class="n">${g.n}</td><td class="n">${money(g.credit)}</td><td class="n">${money(g.paid)}</td><td class="n ${g.out>0?'am':''}">${money(g.out)}</td><td>${fmtD(g.last)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No named customers match.</div>')+`<div class="mut" style="margin-top:10px">Walk-in sales with no name: ${walk.length} sales, ${money(sum(walk,'rev'))}</div>`;
  const g=CA.find(x=>x.key==CV);
  $('#cuD').innerHTML=g?`<div class="card" style="margin-top:18px"><div class="row"><h2>${esc(g.name)}</h2><button class="btn sm" data-a="cv" data-n="-1">Close</button></div><div class="sub">${esc(g.ph||'No phone recorded')} · ${g.n} purchases · ${money(g.buy)} total · credit given ${money(g.credit)} · paid ${money(g.paid)} · <b class="${g.out>0?'am':''}">outstanding ${money(g.out)}</b></div>
- <div class="tools">${g.out>0?'<button class="btn gr sm" data-a="rc2">Receive payment</button>':''}<button class="btn sm" data-a="ca">Add another spelling</button><button class="btn sm" data-a="cp">Edit phone</button></div>
+ <div class="tools">${g.out>0?'<button class="btn gr sm" data-a="rc2">Receive payment</button>':''}<button class="btn sm" data-a="ca">Add another spelling</button><button class="btn sm" data-a="cp">Edit phone</button>${g.out>0?'<button class="btn sm am" data-a="wa2">WhatsApp reminder</button>':''}</div>
  <h3 style="margin:10px 0 6px;font-size:16px">Credit settlement</h3><div class="tw">${g.sales.filter(x=>x.pm=='credit').length?`<table style="min-width:0"><thead><tr><th>Date</th><th>Brand</th><th class="n">Amount</th><th class="n">Paid</th><th class="n">Balance</th><th>Status</th></tr></thead><tbody>${g.sales.filter(x=>x.pm=='credit').sort((a,b)=>b.t-a.t).map(x=>`<tr><td>${fmtD(x.t)}</td><td>${esc(x.name)} × ${x.sticks}</td><td class="n">${money(x.rev)}</td><td class="n">${money(paidOf(x))}</td><td class="n">${money(bal(x))}</td><td>${bal(x)<=0?'<span class="pill g">Settled</span>':paidOf(x)>0?'<span class="pill a">Part paid</span>':'<span class="pill r">Pending</span>'}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No credit sales.</div>'}</div>
  <h3 style="margin:14px 0 6px;font-size:16px">Payment history</h3><div class="tw">${g.pays.length?`<table style="min-width:0"><thead><tr><th>Date</th><th class="n">Amount</th><th>Method</th><th>For</th></tr></thead><tbody>${g.pays.sort((a,b)=>b.t-a.t).map(p=>`<tr><td>${fmtDT(p.t)}</td><td class="n gr">${money(p.a)}</td><td>${p.m=='gpay'?'GPay':'Cash'}</td><td>${esc(p.sale.name)} on ${fmtD(p.sale.t)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No payments yet.</div>'}</div>
  <h3 style="margin:14px 0 6px;font-size:16px">Purchase history</h3><div class="tw"><table style="min-width:0"><thead><tr><th>Date</th><th>Brand</th><th class="n">Sticks</th><th class="n">Amount</th><th>Paid by</th></tr></thead><tbody>${[...g.sales].sort((a,b)=>b.t-a.t).map(x=>`<tr><td>${fmtDT(x.t)}</td><td>${esc(x.name)}</td><td class="n">${x.sticks}</td><td class="n">${money(x.rev)}</td><td>${pmLabel(x)}</td></tr>`).join('')}</tbody></table></div></div>`:'';
@@ -1942,6 +1942,8 @@ function home(){
  if(out.length)add('r','Out of stock: '+out.map(i=>esc(i.name)).join(', '),'Customers cannot buy these.','<button class="btn am" data-a="qpur">Add stock</button>');
  if(low.length)add('','Running low: '+low.map(i=>esc(i.name)+' ('+packs(i)+' packs)').join(', '),'','<button class="btn" data-go="inv">See reorder list</button>');
  const ow=custAgg().filter(g=>g.out>0).sort((a,b)=>b.out-a.out);
+ const lim=limitAmt(),over=ow.filter(g=>g.out>lim);
+ if(over.length)add('r','Credit above '+money(lim)+': '+over.map(g=>esc(g.name)+' '+money(g.out)).join(', '),'Send them a WhatsApp reminder.','<button class="btn am" data-go="cr">Send reminders</button>');
  if(ow.length)add('','People who owe you: '+ow.slice(0,3).map(g=>esc(g.name)+' '+money(g.out)).join(', ')+(ow.length>3?' and '+(ow.length-3)+' more':''),'Total '+money(owed),'<button class="btn am" data-go="cr">Collect</button>');
  const so=D.restocks.reduce((n,r)=>n+pbal(r),0);if(so>0)add('','You owe suppliers '+money(so),'','<button class="btn" data-go="pur">See suppliers</button>');
  if(SGL.length)add('','Some customer names look like duplicates ('+SGL.length+' groups)','Merge them so each customer has one ledger.','<button class="btn" data-go="cu">Review</button>');
@@ -1949,6 +1951,18 @@ function home(){
  $('#hAtt').innerHTML=A.length?A.join(''):'<div class="att g"><div><b>All good</b><div class="mut" style="font-size:14px">Stock is fine and nobody owes you.</div></div></div>';
  const l=[...D.sales].sort((a,b)=>b.t-a.t).slice(0,6);
  $('#hRecent').innerHTML=l.length?l.map(saleRow).join(''):'<div class="empty">No sales yet. Press New sale to start.</div>';
+}
+const UPI='sainath2005tvm-1@okaxis';
+function limitAmt(){const l=D.limits.find(x=>x.id=='credit');return l&&l.amt!=null?+l.amt:200}
+function limitForm(){form('Credit alert limit',[['amt','Alert when a customer owes more than (₹)','number',limitAmt(),'required min="0"']],o=>{let c=D.limits.find(x=>x.id=='credit');if(!c){c={id:'credit'};D.limits.push(c)}c.amt=+o.amt;aud('Credit limit set',money(+o.amt));save();render();toast('Limit saved')})}
+function waNum(p){let d=String(p||'').replace(/\D/g,'');if(d.length==11&&d[0]=='0')d=d.slice(1);if(d.length==10)d='91'+d;return d.length>=11&&d.length<=15?d:''}
+function lastRem(name){const a=D.audit.filter(x=>x.act=='WhatsApp reminder'&&String(x.det).startsWith(name+' ')).sort((p,q)=>q.t-p.t)[0];return a?fmtD(a.t):''}
+function remind(name,ph,amt,key){
+ const n=waNum(ph);
+ if(!n){toast('Add a valid phone number first');if(key){CV=key;show('cu');phoneForm()}return}
+ const msg='Hello '+name+', this is a reminder from Hostel Cig. Your pending balance is ₹'+(Math.round(amt*100)/100)+'. Please pay by cash or GPay (UPI: '+UPI+'). Thank you.';
+ aud('WhatsApp reminder',name+' '+money(amt));save();render();
+ window.open('https://wa.me/'+n+'?text='+encodeURIComponent(msg),'_blank');
 }
 function ask(msg,yes,label){
  const d=$('#dlg');
@@ -2098,9 +2112,11 @@ function cartR(){
  cartSum();
 }
 function cartSum(){const rev=cart.reduce((n,c)=>n+c.qty*c.price,0);$('#qamt').textContent=money(rev);$('#cartS').innerHTML=`<div><span class="mut">Total</span><b style="font-size:26px">${money(rev)}</b></div>`}
-function pay(){
+function pay(force){
  if(!cart.length)return toast('Add something to the bill first');
  if(pm=='credit'&&!$('#c-name').value.trim()){$('#cust').open=true;$('#c-name').focus();return toast('Enter the customer name for a credit sale')}
+ if(pm=='credit'&&!force){const nm=nk($('#c-name').value),cur=D.sales.filter(x=>nk(x.cust)==nm).reduce((n,x)=>n+bal(x),0),bill=cart.reduce((n,c)=>n+c.qty*c.price,0),lim=limitAmt();
+  if(cur+bill>lim)return ask($('#c-name').value.trim()+' owes '+money(cur)+' already. With this bill it becomes '+money(cur+bill)+'. The credit limit is '+money(lim)+'. Give credit anyway?',()=>pay(true),'Give credit')}
  for(const c of cart)if(sticksIn(c.item)>itm(c.item).stock)return toast('Not enough stock for '+itm(c.item).name);
  const bill=uid(),t=Date.now(),cust=$('#c-name').value.trim(),ph=$('#c-ph').value.trim();
  let total=0;
@@ -2136,6 +2152,9 @@ document.body.addEventListener('click',e=>{
  if(b.dataset.go)return show(b.dataset.go);
  const id=b.dataset.id,a=b.dataset.a,i=D.items.find(x=>x.id==id);
  if(a=='st')return settle(id);
+ if(a=='wa'){const g=CG[+b.dataset.n];return g&&remind(g.name,g.ph,g.owe,custOf(g.l[0]).key)}
+ if(a=='wa2'){const g=CA.find(x=>x.key==CV);return g&&remind(g.name,g.ph,g.out,g.key)}
+ if(a=='lim')return limitForm();
  if(a=='qpur')return purchaseForm();
  if(a=='qexp')return $('#addExp').click();
  if(a=='qadd')return itemForm();
@@ -2166,7 +2185,7 @@ $('#addTop').onclick=$('#addBtn').onclick=()=>itemForm();
 $('#quick').onclick=()=>show('pos');
 $('#addExp').onclick=()=>form('Add expense',[['desc','What was it for?','text','','required'],['cat','Category','select','Operating expenses','',CATS.map(c=>[c,c])],['amt','Amount (₹)','number','','required min="0"'],['d','Date','date',day(Date.now()),'required'],['pm','Paid by','select','cash','',[['cash','Cash'],['gpay','GPay']]]],o=>{D.exp.push({id:uid(),desc:o.desc.trim(),cat:o.cat,amt:+o.amt,d:o.d,pm:o.pm});aud('Expense',o.cat+': '+o.desc.trim()+' '+money(+o.amt));save();render();toast('Expense added')});
 $('#i-q').oninput=e=>{iq=e.target.value.toLowerCase();inv()};$('#i-s').onchange=e=>{isort=e.target.value;inv()};$('#i-l').onchange=e=>{ilow=e.target.checked;inv()};
-$('#pm-cash').onclick=()=>setPm('cash');$('#pm-gpay').onclick=()=>setPm('gpay');$('#pm-credit').onclick=()=>setPm('credit');$('#pay').onclick=pay;$('#more').addEventListener('toggle',()=>{if($('#more').open)draw()});
+$('#pm-cash').onclick=()=>setPm('cash');$('#pm-gpay').onclick=()=>setPm('gpay');$('#pm-credit').onclick=()=>setPm('credit');$('#pay').onclick=()=>pay();$('#more').addEventListener('toggle',()=>{if($('#more').open)draw()});
 $('#newPur').onclick=()=>purchaseForm();$('#cu-q').oninput=customers;$('#fn-from').onchange=finance;$('#fn-to').onchange=finance;$('#bak2').onclick=()=>$('#bak').click();
 $('#openCash').onclick=()=>form('Opening cash',[['amt','Cash in hand at the start (₹)','number',cfg().openCash??'','required min="0"'],['d','From date','date',cfg().openDate||day(Date.now()),'required']],o=>{let c=D.settings.find(x=>x.id=='cfg');if(!c){c={id:'cfg'};D.settings.push(c)}c.openCash=+o.amt;c.openDate=o.d;aud('Opening cash set',money(+o.amt)+' from '+o.d);save();render();toast('Opening cash saved')});
 document.body.addEventListener('change',e=>{const d=e.target.dataset&&e.target.dataset.rc;if(!d)return;const v=e.target.value.trim(),ex=D.recon.find(x=>x.id==d);
