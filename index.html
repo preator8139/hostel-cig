@@ -107,6 +107,20 @@ tr[data-a]{cursor:pointer}tr[data-a]:hover td{background:#12162200;background:#1
 .sg input[type=text]{margin-top:8px}.sgb{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .warn{border-left:4px solid var(--am);padding:10px 14px;background:#1a1810;border-radius:8px;margin-bottom:8px}
 @media(max-width:520px){.invg{grid-template-columns:1fr}}
+.hello h1{font-size:28px}.hello{margin-bottom:16px}
+.sec{font-size:19px;margin:26px 0 12px}
+.qa{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.qb{display:flex;flex-direction:column;gap:4px;text-align:left;padding:18px 16px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
+.qb b{font-size:19px}.qb small{color:var(--mut);font-size:14px}
+.qb.am{background:var(--am);border-color:var(--am);color:#1a1000}.qb.am small{color:#3d2a00}
+.qb:hover,.tl:hover{border-color:var(--am)}.qb:active,.tl:active{transform:scale(.98)}
+.tiles2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.tl{display:flex;flex-direction:column;gap:3px;text-align:left;padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
+.tl b{font-size:17px}.tl small{color:var(--mut);font-size:13.5px}
+.att{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--card);margin-bottom:10px;border-left:4px solid var(--am)}
+.att.r{border-left-color:var(--rd)}.att.g{border-left-color:var(--gr)}.att div{min-width:0}
+details#more>summary{cursor:pointer;margin-top:0}
+@media(max-width:700px){.bar{gap:10px}nav{width:100%;order:3;overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}nav button{white-space:nowrap}}
 @media(max-width:980px){.pos{grid-template-columns:1fr}.cart{position:static}}
 @media(max-width:980px){.k4{grid-template-columns:1fr 1fr}.c2,.c3{grid-template-columns:1fr}}
 @media(max-width:520px){.k4{grid-template-columns:1fr}.big{font-size:27px}}
@@ -119,13 +133,39 @@ tr[data-a]{cursor:pointer}tr[data-a]:hover td{background:#12162200;background:#1
 <header><div class="bar">
  <div class="logo"><div class="mark">HC</div><div><b>Hostel Cig</b><small>Stock, sales &amp; profit tracker</small></div></div>
  <nav id="nav">
-  <button data-v="dash" class="on">Dashboard</button><button data-v="inv">Stock Inventory</button><button data-v="pos">Point of Sale</button><button data-v="psl">Recent sales</button><button data-v="exp">Expenses</button><button data-v="log">Sales Log</button><button data-v="cr">Credit</button><button data-v="day">Day report</button><button data-v="cu">Customers</button><button data-v="pur">Purchases</button><button data-v="fin">Finance</button><button data-v="aud">Audit</button>
+  <button data-v="dash" class="on">Home</button><button data-v="inv">Stock Inventory</button><button data-v="pos">Point of Sale</button><button data-v="psl">Recent sales</button><button data-v="exp">Expenses</button><button data-v="log">Sales Log</button><button data-v="cr">Credit</button><button data-v="day">Day report</button><button data-v="cu">Customers</button><button data-v="pur">Purchases</button><button data-v="fin">Finance</button><button data-v="aud">Audit</button>
  </nav>
  <button class="btn am" id="addTop">Add Item</button><button class="btn gr" id="quick">Quick Sale</button><button class="btn" id="out" hidden>Sign out</button>
 </div></header>
 
 <main>
 <section class="view on" id="v-dash">
+ <div class="hello"><h1 id="hGreet">Hello</h1><div class="mut" id="hDate"></div></div>
+ <div class="qa">
+  <button class="qb am" data-go="pos"><b>New sale</b><small>Sell sticks or packs</small></button>
+  <button class="qb" data-a="qpur"><b>Add stock</b><small>Record a purchase</small></button>
+  <button class="qb" data-a="qrec"><b>Collect credit</b><small>Customer pays you</small></button>
+  <button class="qb" data-a="qexp"><b>Add expense</b><small>Transport, bags...</small></button>
+ </div>
+ <h2 class="sec">Today</h2>
+ <div class="grid k4" id="hK"></div>
+ <h2 class="sec">Needs your attention</h2>
+ <div id="hAtt"></div>
+ <h2 class="sec">Latest sales</h2>
+ <div class="card"><div class="list" id="hRecent"></div><div style="margin-top:10px"><button class="btn sm" data-go="log">See all sales</button></div></div>
+ <h2 class="sec">Go to</h2>
+ <div class="tiles2">
+  <button class="tl" data-go="inv"><b>Stock</b><small>What is left, restock, adjust</small></button>
+  <button class="tl" data-go="cu"><b>Customers</b><small>Who bought, who owes</small></button>
+  <button class="tl" data-go="cr"><b>Credit</b><small>Collect what is owed</small></button>
+  <button class="tl" data-go="pur"><b>Suppliers</b><small>Purchases and what you owe</small></button>
+  <button class="tl" data-go="fin"><b>Money</b><small>Cash, GPay, profit</small></button>
+  <button class="tl" data-go="day"><b>Day report</b><small>Close the day</small></button>
+  <button class="tl" data-go="exp"><b>Expenses</b><small>What you spent</small></button>
+  <button class="tl" data-go="aud"><b>Checks</b><small>Audit log and data problems</small></button>
+ </div>
+ <details id="more" class="card" style="margin-top:22px"><summary style="margin:0;font-weight:700;color:var(--tx)">More numbers and charts</summary>
+
  <div id="alerts"></div>
  <div class="grid k4" id="kpis"></div>
  <div class="grid c2">
@@ -136,6 +176,8 @@ tr[data-a]{cursor:pointer}tr[data-a]:hover td{background:#12162200;background:#1
   <div class="card"><h2>Inventory health</h2><div class="sub">Packs left per brand</div><div class="list" id="health"></div></div>
   <div class="card"><div class="row"><div><h2>Recent transactions</h2><div class="sub">Latest sales logged</div></div><button class="btn sm" data-go="log">View all logs</button></div><div class="list" id="recent"></div></div>
  </div>
+
+ </details>
 </section>
 
 <section class="view" id="v-inv">
@@ -1885,6 +1927,29 @@ function audView(){
  const l=[...D.audit].sort((a,b)=>b.t-a.t).slice(0,300);
  $('#audT').innerHTML=l.length?`<table><thead><tr><th>Date</th><th>By</th><th>Action</th><th>Details</th></tr></thead><tbody>${l.map(a=>`<tr><td>${fmtDT(a.t)}</td><td>${esc(a.by||'')}</td><td>${esc(a.act)}</td><td>${esc(a.det)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No changes logged yet.</div>';
 }
+function home(){
+ const now=new Date(),hr=now.getHours(),td=day(Date.now());
+ $('#hGreet').textContent=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+ $('#hDate').textContent=now.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ const ss=D.sales.filter(x=>day(x.t)==td),rev=sum(ss,'rev'),prof=rev-sum(ss,'cost');
+ let cash=0,gp=0;
+ D.sales.forEach(x=>{if(x.pm=='cash'&&day(x.t)==td)cash+=x.rev;if(x.pm=='gpay'&&day(x.t)==td)gp+=x.rev;if(x.pm=='credit')payments(x).forEach(p=>{if(day(p.t)==td){if(p.m=='cash')cash+=p.a;else gp+=p.a}})});
+ const owed=D.sales.reduce((n,x)=>n+bal(x),0),C=(l,v,sub,cl)=>`<div class="card"><div class="lbl">${l}</div><div class="big ${cl||''}">${v}</div><span class="mut">${sub}</span></div>`;
+ $('#hK').innerHTML=C('Sold today',money(rev),ss.length+(ss.length==1?' sale':' sales'))+C('Profit today',money(prof),'before expenses',prof<0?'rd':'gr')+C('Money received today',money(cash+gp),'Cash '+money(cash)+' · GPay '+money(gp))+C('People owe you',money(owed),'credit not paid yet','am');
+ const A=[],add=(cl,t,sub,btn)=>A.push(`<div class="att ${cl}"><div><b>${t}</b>${sub?`<div class="mut" style="font-size:14px">${sub}</div>`:''}</div>${btn||''}</div>`);
+ if(!D.items.length)add('','Add your first product','Open Stock and press Add Item.','<button class="btn am" data-a="qadd">Add product</button>');
+ const out=D.items.filter(i=>i.stock<=0),low=D.items.filter(i=>i.stock>0&&packs(i)<=i.min);
+ if(out.length)add('r','Out of stock: '+out.map(i=>esc(i.name)).join(', '),'Customers cannot buy these.','<button class="btn am" data-a="qpur">Add stock</button>');
+ if(low.length)add('','Running low: '+low.map(i=>esc(i.name)+' ('+packs(i)+' packs)').join(', '),'','<button class="btn" data-go="inv">See reorder list</button>');
+ const ow=custAgg().filter(g=>g.out>0).sort((a,b)=>b.out-a.out);
+ if(ow.length)add('','People who owe you: '+ow.slice(0,3).map(g=>esc(g.name)+' '+money(g.out)).join(', ')+(ow.length>3?' and '+(ow.length-3)+' more':''),'Total '+money(owed),'<button class="btn am" data-go="cr">Collect</button>');
+ const so=D.restocks.reduce((n,r)=>n+pbal(r),0);if(so>0)add('','You owe suppliers '+money(so),'','<button class="btn" data-go="pur">See suppliers</button>');
+ if(SGL.length)add('','Some customer names look like duplicates ('+SGL.length+' groups)','Merge them so each customer has one ledger.','<button class="btn" data-go="cu">Review</button>');
+ const cm=moves().some(x=>x.m=='cash'&&day(x.t)==td);if(cm&&!D.recon.some(x=>x.id==td))add('','Count your cash for today','Type what you hold and compare with the app.','<button class="btn" data-go="fin">Count cash</button>');
+ $('#hAtt').innerHTML=A.length?A.join(''):'<div class="att g"><div><b>All good</b><div class="mut" style="font-size:14px">Stock is fine and nobody owes you.</div></div></div>';
+ const l=[...D.sales].sort((a,b)=>b.t-a.t).slice(0,6);
+ $('#hRecent').innerHTML=l.length?l.map(saleRow).join(''):'<div class="empty">No sales yet. Press New sale to start.</div>';
+}
 function ask(msg,yes,label){
  const d=$('#dlg');
  d.innerHTML=`<form novalidate><h3>Are you sure?</h3><p style="margin-top:10px;white-space:pre-line">${esc(msg)}</p><div class="row" style="margin-top:18px;justify-content:flex-end"><button type="button" class="btn" id="dx">Cancel</button><button type="button" class="btn rd" id="sv">${label||'Delete'}</button></div></form>`;
@@ -2064,13 +2129,17 @@ function log(){
 
 /* ---------- wiring ---------- */
 function show(v){document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id=='v-'+v));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));if(v=='dash')draw();scrollTo(0,0)}
-function render(){cidx();SGL=suggestions();dash();inv();reorder();rs();posFill();expn();log();psl();credit();dayRep();alerts();mov();adjH();customers();purch();finance();audView()}
+function render(){cidx();SGL=suggestions();home();dash();inv();reorder();rs();posFill();expn();log();psl();credit();dayRep();alerts();mov();adjH();customers();purch();finance();audView()}
 $('#nav').onclick=e=>{if(e.target.dataset.v)show(e.target.dataset.v)};
 document.body.addEventListener('click',e=>{
  const b=e.target.closest('[data-a],[data-go]');if(!b)return;
  if(b.dataset.go)return show(b.dataset.go);
  const id=b.dataset.id,a=b.dataset.a,i=D.items.find(x=>x.id==id);
  if(a=='st')return settle(id);
+ if(a=='qpur')return purchaseForm();
+ if(a=='qexp')return $('#addExp').click();
+ if(a=='qadd')return itemForm();
+ if(a=='qrec')return show('cr');
  if(a=='adj')return adjustForm(i);
  if(a=='cv'){const g=CA[+b.dataset.n];CV=g?g.key:null;return customers()}
  if(a=='cm')return mergeCluster(+b.dataset.n,true);
@@ -2097,7 +2166,7 @@ $('#addTop').onclick=$('#addBtn').onclick=()=>itemForm();
 $('#quick').onclick=()=>show('pos');
 $('#addExp').onclick=()=>form('Add expense',[['desc','What was it for?','text','','required'],['cat','Category','select','Operating expenses','',CATS.map(c=>[c,c])],['amt','Amount (₹)','number','','required min="0"'],['d','Date','date',day(Date.now()),'required'],['pm','Paid by','select','cash','',[['cash','Cash'],['gpay','GPay']]]],o=>{D.exp.push({id:uid(),desc:o.desc.trim(),cat:o.cat,amt:+o.amt,d:o.d,pm:o.pm});aud('Expense',o.cat+': '+o.desc.trim()+' '+money(+o.amt));save();render();toast('Expense added')});
 $('#i-q').oninput=e=>{iq=e.target.value.toLowerCase();inv()};$('#i-s').onchange=e=>{isort=e.target.value;inv()};$('#i-l').onchange=e=>{ilow=e.target.checked;inv()};
-$('#pm-cash').onclick=()=>setPm('cash');$('#pm-gpay').onclick=()=>setPm('gpay');$('#pm-credit').onclick=()=>setPm('credit');$('#pay').onclick=pay;
+$('#pm-cash').onclick=()=>setPm('cash');$('#pm-gpay').onclick=()=>setPm('gpay');$('#pm-credit').onclick=()=>setPm('credit');$('#pay').onclick=pay;$('#more').addEventListener('toggle',()=>{if($('#more').open)draw()});
 $('#newPur').onclick=()=>purchaseForm();$('#cu-q').oninput=customers;$('#fn-from').onchange=finance;$('#fn-to').onchange=finance;$('#bak2').onclick=()=>$('#bak').click();
 $('#openCash').onclick=()=>form('Opening cash',[['amt','Cash in hand at the start (₹)','number',cfg().openCash??'','required min="0"'],['d','From date','date',cfg().openDate||day(Date.now()),'required']],o=>{let c=D.settings.find(x=>x.id=='cfg');if(!c){c={id:'cfg'};D.settings.push(c)}c.openCash=+o.amt;c.openDate=o.d;aud('Opening cash set',money(+o.amt)+' from '+o.d);save();render();toast('Opening cash saved')});
 document.body.addEventListener('change',e=>{const d=e.target.dataset&&e.target.dataset.rc;if(!d)return;const v=e.target.value.trim(),ex=D.recon.find(x=>x.id==d);
